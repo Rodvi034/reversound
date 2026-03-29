@@ -244,12 +244,18 @@ const BeatMarketplace = () => {
                     </button>
 
                     {/* Cover + Info */}
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
+                      onClick={() => beat.item_type === 'pack' ? navigate(`/packs/${beat.id}`) : null}>
                       {beat.cover_url && (
                         <img src={beat.cover_url} alt="" className="w-9 h-9 rounded object-cover flex-shrink-0 hidden sm:block" />
                       )}
                       <div className="min-w-0">
-                        <p className={`text-sm font-medium truncate ${active ? 'text-[#8b5cf6]' : 'text-white'}`}>{beat.title}</p>
+                        <div className="flex items-center gap-1.5">
+                          <p className={`text-sm font-medium truncate ${active ? 'text-[#8b5cf6]' : 'text-white'}`}>{beat.title}</p>
+                          {beat.item_type === 'pack' && (
+                            <span className="text-[9px] font-mono uppercase px-1.5 py-0.5 rounded bg-[#ec4899]/10 text-[#ec4899] border border-[#ec4899]/20 flex-shrink-0">PACK</span>
+                          )}
+                        </div>
                         <p className="text-xs text-[#a1a1aa] truncate">{beat.producer_name}</p>
                       </div>
                     </div>

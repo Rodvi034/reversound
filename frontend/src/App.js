@@ -29,6 +29,8 @@ import StudioFeed from '@/pages/StudioFeed';
 import PlaylistPage from '@/pages/PlaylistPage';
 import SupportCenter from '@/pages/SupportCenter';
 import LiveRoom from '@/pages/LiveRoom';
+import AnalyticsDashboard from '@/pages/AnalyticsDashboard';
+import PackDetail from '@/pages/PackDetail';
 
 function App() {
   return (
@@ -63,6 +65,8 @@ function App() {
                   <Route path="/support" element={<ProtectedRoute><SupportCenter /></ProtectedRoute>} />
                   <Route path="/liveroom" element={<ProtectedRoute><LiveRoom /></ProtectedRoute>} />
                   <Route path="/liveroom/:roomId" element={<ProtectedRoute><LiveRoom /></ProtectedRoute>} />
+                  <Route path="/analytics" element={<ProtectedRoute><AnalyticsDashboard /></ProtectedRoute>} />
+                  <Route path="/packs/:id" element={<PackDetail />} />
 
                   {/* Admin only */}
                   <Route path="/admin" element={<ProtectedRoute adminOnly><AdminPortal /></ProtectedRoute>} />

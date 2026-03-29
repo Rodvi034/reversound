@@ -76,7 +76,8 @@ async def get_gig(gig_id: str):
     gig = await db.gigs.find_one({"_id": ObjectId(gig_id)})
     if not gig:
         raise HTTPException(404, "Gig not found")
-    # Fetch reviews
+    await db.gigs.update_one({"_id": ObjectId(gig_id)}, {"$inc": {"total_views": 1}})
+    # Enrich with reviews
     reviews_cursor = db.reviews.find({"gig_id": gig_id}).sort("created_at", -1).limit(10)
     reviews = docs_to_list(await reviews_cursor.to_list(10))
     result = doc_to_dict(gig)

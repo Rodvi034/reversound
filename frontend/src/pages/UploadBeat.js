@@ -25,6 +25,7 @@ const UploadBeat = () => {
   const [audioPath, setAudioPath] = useState('');
   const [coverPath, setCoverPath] = useState('');
   const [packPath, setPackPath] = useState('');
+  const [previewTracks, setPreviewTracks] = useState([{ title: '', url: '', duration: '' }]);
   const [tagInput, setTagInput] = useState('');
   const [licenses, setLicenses] = useState(DEFAULT_LICENSES);
   const [loading, setLoading] = useState(false);
@@ -44,6 +45,7 @@ const UploadBeat = () => {
         audio_url: audioPath || '',
         cover_url: coverPath || '',
         pack_file_url: packPath || '',
+        preview_tracks: itemType === 'pack' ? previewTracks.filter(t => t.title && t.url) : [],
         licenses,
       };
       await axios.post(`${API}/beats`, payload,
@@ -174,6 +176,41 @@ const UploadBeat = () => {
               onUploaded={r => setCoverPath(r.url)}
             />
           </div>
+
+          {/* Preview Tracks (packs only) */}
+          {itemType === 'pack' && (
+            <div className="rs-card p-5 space-y-3">
+              <h3 className="text-sm font-semibold text-white font-mono uppercase tracking-wider flex items-center gap-2">
+                <Music size={14} className="text-[#8b5cf6]" /> Önizleme Parçaları
+              </h3>
+              <p className="text-xs text-[#a1a1aa]">Alıcıların satın almadan önce dinleyebileceği demo parçalar (maks. 5)</p>
+              {previewTracks.map((track, i) => (
+                <div key={i} className="grid grid-cols-3 gap-2 p-3 bg-[#0d0d0f] rounded-md">
+                  <input type="text" placeholder={`Parça ${i + 1} adı`} value={track.title}
+                    onChange={e => setPreviewTracks(prev => prev.map((t, j) => j === i ? { ...t, title: e.target.value } : t))}
+                    className="rs-input text-xs h-8" />
+                  <input type="url" placeholder="Audio URL" value={track.url}
+                    onChange={e => setPreviewTracks(prev => prev.map((t, j) => j === i ? { ...t, url: e.target.value } : t))}
+                    className="rs-input text-xs h-8" />
+                  <div className="flex gap-1">
+                    <input type="text" placeholder="1:30" value={track.duration}
+                      onChange={e => setPreviewTracks(prev => prev.map((t, j) => j === i ? { ...t, duration: e.target.value } : t))}
+                      className="rs-input text-xs h-8 flex-1" />
+                    {previewTracks.length > 1 && (
+                      <button type="button" onClick={() => setPreviewTracks(prev => prev.filter((_, j) => j !== i))}
+                        className="px-2 text-[#ec4899] hover:bg-[#ec4899]/10 rounded-md transition-colors"><Trash2 size={12} /></button>
+                    )}
+                  </div>
+                </div>
+              ))}
+              {previewTracks.length < 5 && (
+                <button type="button" onClick={() => setPreviewTracks(prev => [...prev, { title: '', url: '', duration: '' }])}
+                  className="flex items-center gap-2 text-xs text-[#8b5cf6] hover:text-[#7c3aed] transition-colors">
+                  <Plus size={12} /> Parça Ekle
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Tags */}
           <div className="rs-card p-5 space-y-3">

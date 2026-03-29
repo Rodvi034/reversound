@@ -189,6 +189,15 @@ async def create_order(body: OrderCreate, request: Request):
     })
 
     await db.gigs.update_one({"_id": ObjectId(body.gig_id)}, {"$inc": {"total_orders": 1}})
+
+    # Trigger notifications
+    try:
+        import notification_service as ns
+        order_doc["_id"] = result.inserted_id
+        await ns.notify_order_event(db, order_doc, "funded")
+    except Exception:
+        pass
+
     return doc_to_dict(order_doc)
 
 @orders_router.post("/{order_id}/deliver")
@@ -206,13 +215,15 @@ async def deliver_order(order_id: str, body: DeliveryRequest, request: Request):
 
     await db.orders.update_one(
         {"_id": ObjectId(order_id)},
-        {"$set": {
-            "status": "delivered",
-            "delivery_note": body.delivery_note,
-            "delivery_url": body.delivery_url,
-            "delivered_at": datetime.now(timezone.utc)
-        }}
+        {"$set": {"status": "delivered", "delivery_note": body.delivery_note, "delivery_url": body.delivery_url, "delivered_at": datetime.now(timezone.utc)}}
     )
+    # Notify buyer
+    try:
+        import notification_service as ns
+        order = await db.orders.find_one({"_id": ObjectId(order_id)})
+        await ns.notify_order_event(db, order, "delivered")
+    except Exception:
+        pass
     return {"message": "Order marked as delivered. Awaiting buyer approval."}
 
 @orders_router.post("/{order_id}/approve")
@@ -250,10 +261,14 @@ async def approve_order(order_id: str, request: Request):
             "completed_at": datetime.now(timezone.utc)
         }}
     )
-    await db.escrow_transactions.update_one(
-        {"order_id": order_id},
-        {"$set": {"status": "released"}}
-    )
+    await db.escrow_transactions.update_one({"order_id": order_id}, {"$set": {"status": "released"}})
+    # Notify seller
+    try:
+        import notification_service as ns
+        order = await db.orders.find_one({"_id": ObjectId(order_id)})
+        await ns.notify_order_event(db, order, "completed")
+    except Exception:
+        pass
     return {"message": "Order completed. Payment released to seller.", "seller_credited": seller_amount}
 
 @orders_router.post("/{order_id}/dispute")

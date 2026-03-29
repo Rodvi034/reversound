@@ -22,7 +22,10 @@ from routes.websocket import ws_router
 from routes.feed import feed_router
 from routes.playlists import playlists_router
 from routes.support import support_router
-from routes.liveroom import liveroom_router, liveroom_http_router
+from routes.liveroom import liveroom_router, liveroom_http_router, room_manager
+from routes.analytics import analytics_router
+from routes.payment import payment_router
+from routes.notifications import notifications_router, notif_ws_router
 from seed_data import seed_demo_data
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s %(levelname)s %(message)s')
@@ -42,6 +45,10 @@ async def create_indexes(db):
     await db.submissions.create_index("status")
     await db.feed_posts.create_index([("created_at", -1)])
     await db.files.create_index("storage_path")
+    await db.notifications.create_index([("user_id", 1), ("is_read", 1)])
+    await db.notifications.create_index([("created_at", -1)])
+    await db.play_events.create_index([("producer_id", 1), ("played_at", -1)])
+    await db.payments.create_index("order_id")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -53,12 +60,13 @@ async def lifespan(app: FastAPI):
         init_storage()
     except Exception as e:
         logger.warning(f"Storage init deferred: {e}")
-    logger.info("ReverSound API started successfully")
+    await room_manager.init()
+    logger.info("ReverSound API v4.0 started successfully")
     yield
     close_db_client()
     logger.info("ReverSound API shut down")
 
-app = FastAPI(title="ReverSound API", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title="ReverSound API", version="4.0.0", lifespan=lifespan)
 
 cors_origins = [o.strip() for o in os.environ.get('CORS_ORIGINS', 'http://localhost:3000').split(',')]
 app.add_middleware(
@@ -73,13 +81,15 @@ for router in [
     auth_router, beats_router, gigs_router, orders_router,
     messages_router, admin_router, coach_router, wallet_router,
     subscriptions_router, upload_router, files_router, feed_router,
-    playlists_router, support_router, liveroom_http_router
+    playlists_router, support_router, liveroom_http_router,
+    analytics_router, payment_router, notifications_router
 ]:
     app.include_router(router, prefix="/api")
 
 app.include_router(ws_router)
 app.include_router(liveroom_router)
+app.include_router(notif_ws_router)
 
 @app.get("/api/health")
 async def health():
-    return {"status": "ok", "service": "ReverSound API v1.0.0"}
+    return {"status": "ok", "service": "ReverSound API v4.0.0"}

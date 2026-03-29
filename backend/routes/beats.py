@@ -27,6 +27,7 @@ class BeatCreate(BaseModel):
     licenses: List[LicenseTier]
     item_type: str = "beat"             # beat | pack
     pack_file_url: Optional[str] = ""  # .zip for packs
+    preview_tracks: Optional[List[dict]] = []  # [{title, url, duration}] for packs
 
 class BeatUpdate(BaseModel):
     title: Optional[str] = None
@@ -147,9 +148,21 @@ async def delete_beat(beat_id: str, request: Request):
     return {"message": "Beat deleted"}
 
 @beats_router.post("/{beat_id}/play")
-async def increment_play(beat_id: str):
+async def increment_play(beat_id: str, request: Request):
     db = get_db()
+    beat = await db.beats.find_one({"_id": ObjectId(beat_id)}, {"producer_id": 1})
+    if not beat:
+        return {"message": "Beat not found"}
     await db.beats.update_one({"_id": ObjectId(beat_id)}, {"$inc": {"plays": 1}})
+    # Track play event for heatmap analytics
+    now = datetime.now(timezone.utc)
+    await db.play_events.insert_one({
+        "beat_id": beat_id,
+        "producer_id": str(beat.get("producer_id", "")),
+        "hour": now.hour,
+        "day_of_week": now.weekday(),
+        "played_at": now
+    })
     return {"message": "Play recorded"}
 
 @beats_router.post("/{beat_id}/purchase")

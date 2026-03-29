@@ -5,12 +5,13 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useI18n } from '@/contexts/i18nContext';
 import {
   Music, Search, Bell, ChevronDown, LogOut,
-  LayoutDashboard, ShieldCheck, Wallet, Plus, Sun, Moon, Globe, Radio
+  LayoutDashboard, ShieldCheck, Wallet, Plus, Sun, Moon, Globe, Radio, TrendingUp
 } from 'lucide-react';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuSeparator, DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
+import NotificationCenter from '@/components/NotificationCenter';
 
 const NAV_LINKS = [
   { labelKey: 'nav.beats', href: '/beats' },
@@ -98,6 +99,7 @@ const Navbar = () => {
                 data-testid="nav-messages-btn">
                 <Bell size={18} />
               </button>
+              <NotificationCenter />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-white/5 transition-colors" data-testid="nav-user-menu">
@@ -122,6 +124,9 @@ const Navbar = () => {
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate('/liveroom')} className="cursor-pointer hover:bg-white/5" data-testid="menu-liveroom">
                     <Radio size={14} className="mr-2" /> Canlı Oda
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/analytics')} className="cursor-pointer hover:bg-white/5" data-testid="menu-analytics">
+                    <TrendingUp size={14} className="mr-2" /> Analitik
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate('/support')} className="cursor-pointer hover:bg-white/5" data-testid="menu-support">
                     <Bell size={14} className="mr-2" /> Destek
