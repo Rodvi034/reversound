@@ -1,34 +1,36 @@
-.App-logo {
-    height: 40vmin;
-    pointer-events: none;
+/* Global resets and overrides */
+* { box-sizing: border-box; }
+
+.App { min-height: 100vh; background-color: #0d0d0f; }
+
+/* Override shadcn button for primary variant */
+.btn-primary {
+  background: #8b5cf6;
+  color: white;
+  border: none;
+  padding: 0.5rem 1.25rem;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, box-shadow 0.15s;
+  font-family: 'Manrope', sans-serif;
+}
+.btn-primary:hover {
+  background: #7c3aed;
+  box-shadow: 0 0 15px rgba(139,92,246,0.5);
 }
 
-@media (prefers-reduced-motion: no-preference) {
-    .App-logo {
-        animation: App-logo-spin infinite 20s linear;
-    }
+.btn-ghost {
+  background: transparent;
+  color: #a1a1aa;
+  border: 1px solid rgba(255,255,255,0.08);
+  padding: 0.5rem 1.25rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
 }
-
-.App-header {
-    background-color: #0f0f10;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: calc(10px + 2vmin);
-    color: white;
-}
-
-.App-link {
-    color: #61dafb;
-}
-
-@keyframes App-logo-spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
+.btn-ghost:hover {
+  background: rgba(255,255,255,0.05);
+  color: white;
+  border-color: rgba(255,255,255,0.2);
 }
