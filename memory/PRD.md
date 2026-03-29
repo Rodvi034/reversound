@@ -13,7 +13,20 @@ ReverSound — Music Career Ecosystem & Freelance Marketplace
 - **AI:** Gemini 3.1 Pro Preview via emergentintegrations (EMERGENT_LLM_KEY)
 - **Escrow:** Mock escrow system (Iyzico/PayTR ready architecture)
 
-## Implemented Features (v3.0 — Sprint 3 — 2026-03-29)
+## Implemented Features (v4.0 — Sprint 4 — 2026-03-29)
+
+### Sprint 4 Additions
+- [x] **Pro Analytics Dashboard** — Recharts-powered dashboard at `/analytics` (gated Pro/Enterprise): revenue LineChart, beat play heatmap (7-day × 24h grid), gig conversion BarChart, audience demographics PieChart, top beats performance table
+- [x] **Analytics Tier Gating** — Free/Starter blocked with paywall + upgrade CTA; admin role bypasses tier check
+- [x] **Notification Engine** — `notifications` collection, CRUD endpoints, `notification_service.py` creates+pushes; `NotificationCenter` bell with real-time WebSocket push, unread badge counter, mark read/all read
+- [x] **Order Notification Triggers** — Order funded/delivered/completed/cancelled events auto-create notifications for both buyer and seller
+- [x] **Redis-Ready LiveRoom** — Dual-backend state manager (Redis when `REDIS_URL` env is set, in-memory fallback); graceful degradation logged
+- [x] **Iyzico Mock Payment Architecture** — Full marketplace payment flow: sub-merchant registration, checkout form init with HTML form, mock approve webhook, escrow release with 90/10 split, payout records
+- [x] **Beat Play Event Tracking** — Each play logs to `play_events` collection with `hour` and `day_of_week` for heatmap aggregation
+- [x] **Gig View Tracking** — `total_views` counter incremented on gig detail fetch for conversion rate analytics
+- [x] **Sound Pack Previewer** — `PackDetail.js` page at `/packs/{id}` with mini-playlist player for individual preview tracks, WaveformBars sync
+- [x] **Preview Tracks in Upload** — UploadBeat form has dynamic preview track list (up to 5) for Sound Pack type
+- [x] **Pack Type Badge** — Beat marketplace shows "PACK" badge on pack items with link to PackDetail
 
 ### Sprint 3 Additions
 - [x] **Order Detail Page** — `/orders/{id}` with interactive progress tracker (funded→in_progress→delivered→completed), integrated WebSocket chat per order, file attachments, delivery submission, buyer approve/revision flow
