@@ -1,0 +1,111 @@
+{
+  "theme": "dark",
+  "archetype": "5",
+  "archetype_name": "Jewel & Luxury + Electric/Neon (Premium Studio/DAW)",
+  "typography": {
+    "headings": {
+      "family": "Unbounded",
+      "weights": ["600", "800"],
+      "styling": "tracking-tighter uppercase or title-case",
+      "scale": "text-4xl sm:text-5xl lg:text-6xl max",
+      "google_font_import": "@import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@600;800&display=swap');"
+    },
+    "body": {
+      "family": "Manrope",
+      "weights": ["400", "500"],
+      "styling": "leading-relaxed text-zinc-300",
+      "scale": "text-base mobile:text-sm",
+      "google_font_import": "@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500&display=swap');"
+    },
+    "technical_and_data": {
+      "family": "JetBrains Mono",
+      "weights": ["400", "700"],
+      "styling": "tracking-[0.1em] text-xs uppercase",
+      "scale": "text-xs to text-sm",
+      "google_font_import": "@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');"
+    }
+  },
+  "colors": {
+    "background_base": "#0d0d0f",
+    "background_card": "#141416",
+    "background_hover": "#1a1a1f",
+    "primary_accent": "#8b5cf6",
+    "primary_hover": "#7c3aed",
+    "success_neon": "#10b981",
+    "highlight_neon": "#ec4899",
+    "text_primary": "#ffffff",
+    "text_secondary": "#a1a1aa",
+    "border_subtle": "rgba(255, 255, 255, 0.08)",
+    "border_active": "#27272a"
+  },
+  "layout_and_spacing": {
+    "philosophy": "DAW-inspired Grid density. High structural discipline. Cards are flat and distinct.",
+    "scale": "Use p-6 or p-8 for main cards. Dashboard widgets should use tight gap-4 but generous internal padding p-6.",
+    "borders": "1px solid border_subtle for all cards to create the 'Control Room' grid feel. No soft shadows. Use sharp inner glow or 1px strokes.",
+    "alignment": "Left-align dense data, lists, and tables. Center-align hero text and empty states.",
+    "mobile_nav": "Fixed bottom navigation bar on mobile (z-50) using blurred glassmorphism (bg-[#0d0d0f]/80 backdrop-blur-xl)."
+  },
+  "components": {
+    "buttons": "Flat, sharp edges (rounded-sm or rounded-md). Primary uses #8b5cf6 with a subtle inner shadow or hover glow. NO soft pill shapes.",
+    "cards": "bg-[#141416] border border-white/5 rounded-md. Hover state: bg-[#1a1a1f] border-[#8b5cf6]/30 transition-all duration-300.",
+    "waveforms": "Visual micro-interactions. Create animated CSS bars (or use SVG) in primary or neon pink color when a track is playing.",
+    "inputs": "bg-[#0d0d0f] border-white/10 rounded-sm focus:border-[#8b5cf6] focus:ring-1 focus:ring-[#8b5cf6] text-white.",
+    "badges": "JetBrains Mono font. For tags (bpm, key, genre): bg-white/5 text-zinc-300. For Escrow/Success: text-[#10b981] bg-[#10b981]/10 border border-[#10b981]/20."
+  },
+  "motion": {
+    "hover": "Subtle neon glows on primary buttons: shadow-[0_0_15px_rgba(139,92,246,0.5)].",
+    "transitions": "Fast, mechanical transitions (0.15s or 0.2s ease-out). No slow floats.",
+    "loading": "Use waveform animation loaders or pulsing neon borders."
+  },
+  "image_urls": [
+    {
+      "category": "hero_background",
+      "url": "https://static.prod-images.emergentagent.com/jobs/8d651a01-9aa6-4ca1-8c99-7adb0f65b5e1/images/4a30407a4bf9679c5ccac24c94c2bf85e0378c3a637d69c6891893981353ee0e.png",
+      "description": "Dark, moody, high-end music production studio with neon lighting. Use as the main landing page hero background with a heavy dark overlay (bg-black/60 or bg-[#0d0d0f]/80)."
+    },
+    {
+      "category": "abstract_feature_bg",
+      "url": "https://static.prod-images.emergentagent.com/jobs/8d651a01-9aa6-4ca1-8c99-7adb0f65b5e1/images/5511da9ef17cb91e58c9546e4f84d9fc6ec4cb447279bd1f2245e44e021c1504.png",
+      "description": "Abstract 3D sound waves. Perfect for the AI Career Coach section background or subscription CTA section."
+    },
+    {
+      "category": "producer_portrait",
+      "url": "https://static.prod-images.emergentagent.com/jobs/8d651a01-9aa6-4ca1-8c99-7adb0f65b5e1/images/3e57040de96fe38ca2e80f966bba740894e1fae085436792c8be54408eb1d17c.png",
+      "description": "Cool young music producer in studio. Use for gig marketplace 'Top Seller' profiles or testimonial pictures."
+    },
+    {
+      "category": "beat_cover_1",
+      "url": "https://static.prod-images.emergentagent.com/jobs/8d651a01-9aa6-4ca1-8c99-7adb0f65b5e1/images/4353e7abc8a5458c35dfe98b8c3055921ced3b34150def14fa5bec17b9dd0e42.png",
+      "description": "Abstract dark vinyl record with glowing neon purple grooves. Use as default or featured beat artwork in the Beat Marketplace."
+    },
+    {
+      "category": "gig_cover_1",
+      "url": "https://images.unsplash.com/photo-1622386010273-646e12d1c02f?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1MDV8MHwxfHNlYXJjaHwzfHxkaiUyMGNvbnNvbGV8ZW58MHx8fHwxNzc0NzgzMDkyfDA&ixlib=rb-4.1.0&q=85",
+      "description": "DJ console with purple lights. Use as cover image for 'Mixing & Mastering' freelance gigs."
+    },
+    {
+      "category": "gig_cover_2",
+      "url": "https://images.unsplash.com/photo-1537215685160-2496ed0c0aed?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1MDV8MHwxfHNlYXJjaHwxfHxkaiUyMGNvbnNvbGV8ZW58MHx8fHwxNzc0NzgzMDkyfDA&ixlib=rb-4.1.0&q=85",
+      "description": "Person using DJ controller. Use as cover image for 'Custom Beat Production' freelance gigs."
+    },
+    {
+      "category": "sponsor_logo",
+      "url": "https://images.unsplash.com/photo-1674978037981-fef8cbf2b3a2?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1MTN8MHwxfHNlYXJjaHwzfHxicmFuZCUyMGxvZ28lMjB3aGl0ZXxlbnwwfHx8fDE3NzQ3ODMwOTZ8MA&ixlib=rb-4.1.0&q=85",
+      "description": "White logo to be used in 'Trusted By' or partner sections. Use mix-blend-screen or opacity-50 for integration."
+    }
+  ],
+  "instructions_to_main_agent": [
+    "CRITICAL: Use ONLY `.js` and `.jsx` files. DO NOT output `.tsx` or `.ts` files.",
+    "CRITICAL: Add `data-testid` attributes to all buttons, links, form inputs, and interactive elements. Format: kebab-case role-based (e.g., `data-testid='login-submit-button'`).",
+    "CRITICAL: Do NOT use emojis anywhere in the UI. Use `lucide-react` icons exclusively.",
+    "Setup Tailwind for STRICT Dark Mode. The application background must be `#0d0d0f`. Do not build a light mode toggle. Write standard Tailwind classes over this dark base (e.g., bg-[#141416], text-white).",
+    "Install Shadcn primitives as needed (button, card, input, badge, tabs, dialog, avatar, slider, scroll-area, dropdown-menu, table) but customize their styles to match this dark, DAW-inspired theme. Remove Vercel-like soft shadows.",
+    "For the Beat Marketplace list: Use a dense, tabular grid layout. Each row should contain a mini-waveform, play button, track title, bpm, key, and 'buy' button.",
+    "Escrow Tracking: Build a distinct status component for the Order Management page using neon green (#10b981) for 'Funded/Success' states and neon pink (#ec4899) for 'Action Needed'.",
+    "AI Career Coach: Use a chat interface with messages overlaid on the abstract_feature_bg (with heavy blur backdrop). The AI messages should have a subtle #8b5cf6 border.",
+    "Implement a persistent bottom navigation bar for mobile viewports, hiding the sidebar or top nav as needed.",
+    "Waveform Player: When a user clicks play on a beat, show a global sticky player at the bottom of the screen (desktop) or right above the bottom nav (mobile).",
+    "Ensure headings use the Unbounded font (imported via Google Fonts) and technical data uses JetBrains Mono.",
+    "Integrate the provided image URLs specifically for their mapped sections (Hero, Gigs, Beats). Do NOT use generic placeholder URLs."
+  ]
+}
