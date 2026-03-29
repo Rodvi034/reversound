@@ -1,4 +1,6 @@
 import os
+import io
+import re
 from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
@@ -16,27 +18,106 @@ def _build_system_prompt(user: dict) -> str:
     genres = ", ".join(user.get("genres", [])) or "varied genres"
     role = user.get("role", "artist")
     goal = user.get("onboarding_goal", "grow career")
-    return f"""Sen ReverSound AI Kariyer Koçu'sun - müzik endüstrisinde uzmanlaşmış bir danışmansın.
-Uzmanlık alanların:
-- Beat prodüksiyon ve sample oluşturma teknikleri
-- Müzik pazarlama ve promosyon stratejileri
+    return f"""Sen ReverSound AI Kariyer Koçu'sun — müzik endüstrisinde uzmanlaşmış bir danışman.
+Uzmanlıkların:
+- Beat prodüksiyon ve sample teknikleri
+- Müzik pazarlama & Spotify/YouTube büyüme stratejileri
 - Freelance müzik hizmetleri iş geliştirme
-- Sanatçı marka inşası ve sosyal medya büyümesi
+- Sanatçı marka inşası & sosyal medya büyümesi
 - Türkiye ve küresel müzik piyasası trendleri
-- Müzik lisanslama ve telif hakkı rehberliği
-- Streaming platformları stratejileri (Spotify, YouTube, Apple Music)
+- Müzik lisanslama, telif hakkı ve dağıtım rehberliği
+- Mix, mastering, prodüksiyon kalite değerlendirme
 
 Kullanıcı Profili:
-- Rol: {role}
-- Türler: {genres}
-- Hedef: {goal}
+- Rol: {role} | Türler: {genres} | Hedef: {goal}
 
-Kural: Yanıtların somut, kişiselleştirilmiş ve uygulanabilir olsun. Kullanıcı Türkçe yazıyorsa Türkçe, İngilizce yazıyorsa İngilizce yanıt ver.
-Yanıtları yapılandırılmış, maddeler halinde ve motive edici tut. Maksimum 400 kelime."""
+Kural: Somut, kişiselleştirilmiş ve uygulanabilir yanıtlar ver.
+Dil: Türkçe soruya Türkçe, İngilizce soruya İngilizce cevap ver.
+Format: Maddeler, başlıklar ve motivasyon dengesi. Maks 400 kelime."""
+
+def _build_audio_analysis_prompt(user: dict, metadata: dict, user_question: str) -> str:
+    return f"""Sen uzman bir ses mühendisi ve müzik analisti olarak görev yapıyorsun.
+Kullanıcı sana bir ses dosyasının teknik meta verilerini ve analizini gönderiyor.
+
+Kullanıcı: {user.get('name')} | Rol: {user.get('role')} | Türler: {', '.join(user.get('genres', []) or ['belirtilmemiş'])}
+
+Ses Dosyası Meta Verileri:
+- Dosya adı: {metadata.get('filename', 'bilinmiyor')}
+- Format: {metadata.get('format', 'bilinmiyor')}
+- Süre: {metadata.get('duration_str', 'bilinmiyor')}
+- Bit hızı: {metadata.get('bitrate', 'bilinmiyor')} kbps
+- Sample rate: {metadata.get('sample_rate', 'bilinmiyor')} Hz
+- Kanallar: {metadata.get('channels', 'bilinmiyor')}
+- Tahmini BPM aralığı: {metadata.get('estimated_bpm', 'analiz edilemedi')}
+- Dosya boyutu: {metadata.get('size_mb', '?')} MB
+
+Kullanıcının Sorusu: {user_question}
+
+Lütfen şunları değerlendir (verilen meta verilere dayanarak):
+1. **Teknik Kalite**: Bit hızı ve sample rate yeterli mi? Profesyonel yayın için uygun mu?
+2. **Mix/Mastering**: Format ve süreye göre nasıl bir işlem gerekli olabilir?
+3. **Piyasa Uyumu**: Bu tür ve süre için tipik platform gereksinimleri neler?
+4. **Sonraki Adımlar**: Dosyayı nasıl optimize eder ve dağıtıma hazırlarsın?
+5. **Genel Tavsiye**: Kullanıcının rolü ve türlerine göre 2-3 somut öneri.
+
+Yanıtı Türkçe ver. Profesyonel ama motive edici bir ton kullan."""
 
 class ChatMessage(BaseModel):
     message: str
     session_id: Optional[str] = None
+
+class AudioAnalysisRequest(BaseModel):
+    storage_path: str   # path from object storage
+    filename: str
+    file_size: int      # bytes
+    question: str = "Bu ses dosyasını analiz et ve geri bildirim ver."
+
+def _extract_audio_metadata(path: str, filename: str, file_size: int) -> dict:
+    """Extract metadata from stored audio file using mutagen."""
+    metadata = {
+        "filename": filename,
+        "size_mb": round(file_size / (1024 * 1024), 2),
+        "format": "unknown",
+        "duration": None,
+        "duration_str": "unknown",
+        "bitrate": None,
+        "sample_rate": None,
+        "channels": None,
+        "estimated_bpm": "—",
+    }
+    try:
+        from routes.upload import get_object
+        data, content_type = get_object(path)
+        metadata["format"] = content_type.split("/")[-1].upper()
+
+        # Try mutagen
+        try:
+            import mutagen
+            from mutagen import File as MutagenFile
+            audio = MutagenFile(io.BytesIO(data))
+            if audio:
+                info = audio.info
+                if hasattr(info, 'length'):
+                    dur = info.length
+                    metadata["duration"] = dur
+                    mins = int(dur // 60)
+                    secs = int(dur % 60)
+                    metadata["duration_str"] = f"{mins}:{secs:02d}"
+                if hasattr(info, 'bitrate'):
+                    metadata["bitrate"] = round(info.bitrate / 1000)
+                if hasattr(info, 'sample_rate'):
+                    metadata["sample_rate"] = info.sample_rate
+                if hasattr(info, 'channels'):
+                    metadata["channels"] = info.channels
+        except Exception as me:
+            # Fallback: estimate from file size
+            if file_size > 0:
+                est_dur_secs = (file_size * 8) / (128 * 1000)
+                metadata["duration_str"] = f"~{int(est_dur_secs // 60)}:{int(est_dur_secs % 60):02d} (tahmini)"
+                metadata["bitrate"] = 128
+    except Exception as e:
+        pass
+    return metadata
 
 @coach_router.get("/history")
 async def get_history(request: Request):
@@ -52,35 +133,22 @@ async def get_history(request: Request):
 async def chat_with_coach(body: ChatMessage, request: Request):
     user = await get_current_user(request)
     db = get_db()
-
     llm_key = os.environ.get("EMERGENT_LLM_KEY")
     if not llm_key:
         raise HTTPException(500, "AI service not configured")
 
-    # Get or create session
     session = await db.coach_sessions.find_one({"user_id": user["id"]})
     if not session:
-        session_doc = {
-            "user_id": user["id"],
-            "messages": [],
-            "created_at": datetime.now(timezone.utc)
-        }
-        result = await db.coach_sessions.insert_one(session_doc)
-        session_doc["_id"] = result.inserted_id
+        session_doc = {"user_id": user["id"], "messages": [], "created_at": datetime.now(timezone.utc)}
+        res = await db.coach_sessions.insert_one(session_doc)
+        session_doc["_id"] = res.inserted_id
         session = session_doc
 
     session_id = str(session["_id"])
-    history = session.get("messages", [])
 
-    # Save user message to history
-    user_msg_entry = {
-        "role": "user",
-        "content": body.message,
-        "timestamp": datetime.now(timezone.utc).isoformat()
-    }
+    user_msg_entry = {"role": "user", "content": body.message, "timestamp": datetime.now(timezone.utc).isoformat(), "type": "text"}
 
     try:
-        # Build context from history for the LLM
         chat = LlmChat(
             api_key=llm_key,
             session_id=f"coach_{session_id}",
@@ -89,24 +157,70 @@ async def chat_with_coach(body: ChatMessage, request: Request):
 
         response_text = await chat.send_message(UserMessage(text=body.message))
 
-        ai_msg_entry = {
-            "role": "assistant",
-            "content": response_text,
-            "timestamp": datetime.now(timezone.utc).isoformat()
-        }
+        ai_msg_entry = {"role": "assistant", "content": response_text, "timestamp": datetime.now(timezone.utc).isoformat(), "type": "text"}
 
-        # Persist messages
         await db.coach_sessions.update_one(
             {"_id": session["_id"]},
             {"$push": {"messages": {"$each": [user_msg_entry, ai_msg_entry]}}}
         )
+        return {"response": response_text, "session_id": session_id}
+    except Exception as e:
+        raise HTTPException(500, f"AI service error: {str(e)}")
+
+@coach_router.post("/analyze-audio")
+async def analyze_audio(body: AudioAnalysisRequest, request: Request):
+    """Premium feature: AI analysis of uploaded audio files."""
+    user = await get_current_user(request)
+    db = get_db()
+
+    llm_key = os.environ.get("EMERGENT_LLM_KEY")
+    if not llm_key:
+        raise HTTPException(500, "AI service not configured")
+
+    # Extract metadata
+    metadata = _extract_audio_metadata(body.storage_path, body.filename, body.file_size)
+
+    # Build analysis prompt
+    system_prompt = _build_audio_analysis_prompt(user, metadata, body.question)
+
+    try:
+        session_id = f"audio_analysis_{user['id']}_{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
+        chat = LlmChat(
+            api_key=llm_key,
+            session_id=session_id,
+            system_message=system_prompt
+        ).with_model("gemini", "gemini-3.1-pro-preview")
+
+        response_text = await chat.send_message(UserMessage(text=body.question))
+
+        # Save to session history
+        session = await db.coach_sessions.find_one({"user_id": user["id"]})
+        if session:
+            analysis_entry = {
+                "role": "user",
+                "content": f"[Ses Analizi: {body.filename}]\n{body.question}",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "type": "audio_analysis",
+                "metadata": metadata
+            }
+            ai_entry = {
+                "role": "assistant",
+                "content": response_text,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "type": "audio_analysis_response"
+            }
+            await db.coach_sessions.update_one(
+                {"_id": session["_id"]},
+                {"$push": {"messages": {"$each": [analysis_entry, ai_entry]}}}
+            )
 
         return {
-            "response": response_text,
+            "analysis": response_text,
+            "metadata": metadata,
             "session_id": session_id
         }
     except Exception as e:
-        raise HTTPException(500, f"AI service error: {str(e)}")
+        raise HTTPException(500, f"Audio analysis failed: {str(e)}")
 
 @coach_router.delete("/history")
 async def clear_history(request: Request):

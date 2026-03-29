@@ -3,6 +3,7 @@ from fastapi import APIRouter, HTTPException, Request, Query
 from pydantic import BaseModel
 from typing import Optional, List
 from bson import ObjectId
+import re
 
 from database import get_db
 from utils import doc_to_dict, docs_to_list, moderate_post
@@ -10,23 +11,45 @@ from auth import get_current_user
 
 feed_router = APIRouter(prefix="/feed", tags=["feed"])
 
+def _extract_hashtags(content: str) -> list:
+    return list(set(re.findall(r'#(\w+)', content.lower())))
+
 class PostCreate(BaseModel):
     content: str
-    media_url: Optional[str] = None  # optional audio snippet URL
+    media_url: Optional[str] = None
 
 class CommentCreate(BaseModel):
     content: str
 
 @feed_router.get("")
-async def list_posts(page: int = 1, limit: int = 20):
+async def list_posts(
+    page: int = 1,
+    limit: int = 20,
+    hashtag: Optional[str] = None
+):
     db = get_db()
+    query = {"is_hidden": {"$ne": True}}
+    if hashtag:
+        query["hashtags"] = hashtag.lower().lstrip('#')
     skip = (page - 1) * limit
-    total = await db.feed_posts.count_documents({"is_hidden": {"$ne": True}})
-    cursor = db.feed_posts.find(
-        {"is_hidden": {"$ne": True}}
-    ).sort("created_at", -1).skip(skip).limit(limit)
+    total = await db.feed_posts.count_documents(query)
+    cursor = db.feed_posts.find(query).sort("created_at", -1).skip(skip).limit(limit)
     posts = docs_to_list(await cursor.to_list(limit))
     return {"posts": posts, "total": total, "page": page}
+
+@feed_router.get("/trending")
+async def trending_hashtags(limit: int = 10):
+    """Aggregate top hashtags from recent posts."""
+    db = get_db()
+    pipeline = [
+        {"$match": {"is_hidden": {"$ne": True}, "hashtags": {"$exists": True, "$ne": []}}},
+        {"$unwind": "$hashtags"},
+        {"$group": {"_id": "$hashtags", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}},
+        {"$limit": limit}
+    ]
+    result = await db.feed_posts.aggregate(pipeline).to_list(limit)
+    return [{"tag": r["_id"], "count": r["count"]} for r in result]
 
 @feed_router.post("")
 async def create_post(body: PostCreate, request: Request):
@@ -43,6 +66,8 @@ async def create_post(body: PostCreate, request: Request):
     if is_flagged:
         raise HTTPException(400, f"Post blocked: {flag_reason}")
 
+    hashtags = _extract_hashtags(content)
+
     post_doc = {
         "author_id": user["id"],
         "author_name": user["name"],
@@ -50,6 +75,7 @@ async def create_post(body: PostCreate, request: Request):
         "author_role": user.get("role", ""),
         "content": content,
         "media_url": body.media_url,
+        "hashtags": hashtags,
         "likes": [],
         "comments_count": 0,
         "is_hidden": False,
@@ -65,7 +91,6 @@ async def get_post(post_id: str):
     post = await db.feed_posts.find_one({"_id": ObjectId(post_id), "is_hidden": {"$ne": True}})
     if not post:
         raise HTTPException(404, "Post not found")
-    # Fetch comments
     comments_cursor = db.feed_comments.find({"post_id": post_id}).sort("created_at", 1).limit(50)
     comments = docs_to_list(await comments_cursor.to_list(50))
     result = doc_to_dict(post)

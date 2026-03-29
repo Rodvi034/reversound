@@ -18,6 +18,76 @@ class OrderCreate(BaseModel):
 class DisputeRequest(BaseModel):
     reason: str
 
+class RevisionRequest(BaseModel):
+    reason: str
+
+class AttachmentAdd(BaseModel):
+    file_url: str
+    filename: str
+    file_type: str  # audio | image | document
+
+@orders_router.post("/{order_id}/start")
+async def start_order(order_id: str, request: Request):
+    """Seller marks order as in_progress"""
+    user = await get_current_user(request)
+    db = get_db()
+    order = await db.orders.find_one({"_id": ObjectId(order_id)})
+    if not order:
+        raise HTTPException(404, "Order not found")
+    if order["seller_id"] != user["id"]:
+        raise HTTPException(403, "Only the seller can start the order")
+    if order["status"] != "funded":
+        raise HTTPException(400, f"Cannot start order in status: {order['status']}")
+    await db.orders.update_one({"_id": ObjectId(order_id)}, {"$set": {"status": "in_progress", "started_at": datetime.now(timezone.utc)}})
+    return {"message": "Order started"}
+
+@orders_router.post("/{order_id}/revision")
+async def request_revision(order_id: str, body: RevisionRequest, request: Request):
+    """Buyer requests a revision"""
+    user = await get_current_user(request)
+    db = get_db()
+    order = await db.orders.find_one({"_id": ObjectId(order_id)})
+    if not order:
+        raise HTTPException(404, "Order not found")
+    if order["buyer_id"] != user["id"]:
+        raise HTTPException(403, "Only the buyer can request revisions")
+    if order["status"] != "delivered":
+        raise HTTPException(400, "Can only request revision on delivered orders")
+
+    revisions_used = order.get("revisions_used", 0)
+    max_revisions = order.get("revisions", 0)
+    if revisions_used >= max_revisions:
+        raise HTTPException(400, f"No revisions remaining ({max_revisions} used)")
+
+    await db.orders.update_one(
+        {"_id": ObjectId(order_id)},
+        {"$set": {"status": "in_progress", "revision_reason": body.reason},
+         "$inc": {"revisions_used": 1}}
+    )
+    return {"message": f"Revision requested ({revisions_used + 1}/{max_revisions})", "revisions_remaining": max_revisions - revisions_used - 1}
+
+@orders_router.post("/{order_id}/attachments")
+async def add_attachment(order_id: str, body: AttachmentAdd, request: Request):
+    """Add file attachment to order"""
+    user = await get_current_user(request)
+    db = get_db()
+    order = await db.orders.find_one({"_id": ObjectId(order_id)})
+    if not order:
+        raise HTTPException(404, "Order not found")
+    if order["buyer_id"] != user["id"] and order["seller_id"] != user["id"]:
+        raise HTTPException(403, "Not authorized")
+
+    attachment = {
+        "file_url": body.file_url,
+        "filename": body.filename,
+        "file_type": body.file_type,
+        "uploaded_by": user["id"],
+        "uploader_name": user["name"],
+        "uploaded_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.orders.update_one({"_id": ObjectId(order_id)}, {"$push": {"attachments": attachment}})
+    return {"message": "Attachment added", "attachment": attachment}
+
 class DeliveryRequest(BaseModel):
     delivery_note: str
     delivery_url: Optional[str] = ""
@@ -95,6 +165,9 @@ async def create_order(body: OrderCreate, request: Request):
         "status": "funded",           # pending_payment -> funded (escrow held)
         "escrow_status": "held",
         "due_date": due_date,
+        "revisions_used": 0,
+        "attachments": [],
+        "started_at": None,
         "delivered_at": None,
         "completed_at": None,
         "delivery_note": "",

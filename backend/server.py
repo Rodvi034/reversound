@@ -21,6 +21,8 @@ from routes.upload import upload_router, files_router, init_storage
 from routes.websocket import ws_router
 from routes.feed import feed_router
 from routes.playlists import playlists_router
+from routes.support import support_router
+from routes.liveroom import liveroom_router, liveroom_http_router
 from seed_data import seed_demo_data
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s %(levelname)s %(message)s')
@@ -71,12 +73,12 @@ for router in [
     auth_router, beats_router, gigs_router, orders_router,
     messages_router, admin_router, coach_router, wallet_router,
     subscriptions_router, upload_router, files_router, feed_router,
-    playlists_router
+    playlists_router, support_router, liveroom_http_router
 ]:
     app.include_router(router, prefix="/api")
 
-# WebSocket routes (no /api prefix needed — uses /ws/...)
 app.include_router(ws_router)
+app.include_router(liveroom_router)
 
 @app.get("/api/health")
 async def health():

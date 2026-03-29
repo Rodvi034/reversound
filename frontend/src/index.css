@@ -170,4 +170,29 @@ body {
   .main-content { padding-bottom: 5rem; }
 }
 
-[data-debug-wrapper="true"] { display: contents !important; }
+/* ── Light Mode Overrides ─────────────────────────────────────────────────── */
+.light-mode {
+  --bg-base: #f5f5f7;
+  --bg-card: #ffffff;
+  --bg-hover: #f0f0f4;
+  --text-primary: #0d0d0f;
+  --text-secondary: #6b7280;
+  --border: rgba(0, 0, 0, 0.08);
+  --border-active: #d1d5db;
+}
+
+.light-mode body { background-color: #f5f5f7; color: #0d0d0f; }
+.light-mode .rs-card { background: #ffffff; border-color: rgba(0,0,0,0.08); }
+.light-mode .rs-card:hover { background: #f9f9fb; }
+.light-mode .rs-input { background: #f5f5f7; border-color: rgba(0,0,0,0.12); color: #0d0d0f; }
+.light-mode .rs-input::placeholder { color: #9ca3af; }
+.light-mode .rs-input:focus { border-color: #8b5cf6; }
+.light-mode .badge-genre { background: rgba(0,0,0,0.06); color: #6b7280; border-color: rgba(0,0,0,0.08); }
+.light-mode .wave-bar { background: #8b5cf6; }
+.light-mode [class*="text-white"] { color: #0d0d0f !important; }
+.light-mode [class*="text-[#a1a1aa]"] { color: #6b7280 !important; }
+.light-mode [class*="bg-\\[\\#141416\\]"] { background: #ffffff !important; }
+.light-mode [class*="bg-\\[\\#0d0d0f\\]"] { background: #f5f5f7 !important; }
+.light-mode [class*="bg-\\[\\#1a1a1f\\]"] { background: #f0f0f4 !important; }
+.light-mode [class*="border-white\\/5"] { border-color: rgba(0,0,0,0.06) !important; }
+.light-mode [class*="border-white\\/10"] { border-color: rgba(0,0,0,0.1) !important; }
