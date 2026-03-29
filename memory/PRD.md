@@ -13,7 +13,20 @@ ReverSound — Music Career Ecosystem & Freelance Marketplace
 - **AI:** Gemini 3.1 Pro Preview via emergentintegrations (EMERGENT_LLM_KEY)
 - **Escrow:** Mock escrow system (Iyzico/PayTR ready architecture)
 
-## Implemented Features (v1.0 — 2026-03-29)
+## Implemented Features (v2.0 — Sprint 2 — 2026-03-29)
+
+### Sprint 2 Additions
+- [x] **Object Storage** — Emergent Storage API for audio (.mp3/.wav/.flac), pack (.zip), image uploads
+- [x] **FileUpload Component** — Drag & drop with chunked upload, progress bar, error handling
+- [x] **Sound Pack Support** — `item_type` field (beat|pack), marketplace type filter
+- [x] **WaveSurfer.js** — Waveform visualization in GlobalPlayer (v7.12.5)
+- [x] **WebSocket Messaging** — Real-time 1-on-1 messaging replaces 5s polling
+- [x] **Studio Feed** — Authenticated-only microblog with AI/regex moderation
+- [x] **Feed Moderation** — Profanity list, spam patterns, URL blocking (zero tolerance)
+- [x] **Playlist Curation** — Public playlists + artist track submission + jury system
+- [x] **Skeleton Loaders** — Card, beat row, post, stat skeleton components
+- [x] **Beat Marketplace** — Type filter row (Tümü/Beat/Sound Pack)
+- [x] **Updated Navbar** — Feed + Playlist links, updated BottomNav
 
 ### Core Systems
 - [x] JWT Authentication (register/login/logout/me) with httpOnly cookies + Bearer token
