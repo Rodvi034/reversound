@@ -13,7 +13,19 @@ ReverSound — Music Career Ecosystem & Freelance Marketplace
 - **AI:** Gemini 3.1 Pro Preview via emergentintegrations (EMERGENT_LLM_KEY)
 - **Escrow:** Mock escrow system (Iyzico/PayTR ready architecture)
 
-## Implemented Features (v2.0 — Sprint 2 — 2026-03-29)
+## Implemented Features (v3.0 — Sprint 3 — 2026-03-29)
+
+### Sprint 3 Additions
+- [x] **Order Detail Page** — `/orders/{id}` with interactive progress tracker (funded→in_progress→delivered→completed), integrated WebSocket chat per order, file attachments, delivery submission, buyer approve/revision flow
+- [x] **Order Revision System** — Seller start/deliver, buyer approve/request-revision with revision counter
+- [x] **AI Audio Analysis** — Upload audio files to coach, mutagen metadata extraction (format/duration/bitrate/sample_rate), Gemini 3.1 Pro analysis with specialized prompt
+- [x] **Feed Hashtag System** — Auto-extraction of #hashtags on post create, clickable hashtag links, hashtag filter (`/feed?hashtag=mixingtips`)
+- [x] **Trending Topics Sidebar** — MongoDB aggregation of top hashtags, desktop sidebar on Studio Feed
+- [x] **Support Center** — `/support` page with ticket creation, category system, reply thread, admin management. Floating SupportWidget on all pages
+- [x] **Live Collaboration Room** — `/liveroom` WebSocket room, host/guest roles, host controls playback, room chat, shareable link
+- [x] **i18n System** — Full TR/EN translation context with 80+ keys, language toggle in Navbar, persisted in localStorage
+- [x] **Light/Dark Mode** — ThemeContext with CSS class toggling, premium light theme, persisted in localStorage, toggle in Navbar
+- [x] **Waveform Peak Caching** — Mutagen-powered audio metadata extraction on file upload for backend analysis
 
 ### Sprint 2 Additions
 - [x] **Object Storage** — Emergent Storage API for audio (.mp3/.wav/.flac), pack (.zip), image uploads
