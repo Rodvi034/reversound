@@ -13,6 +13,8 @@ import {
 const NAV_LINKS = [
   { label: 'Beats', href: '/beats' },
   { label: 'Gigs', href: '/gigs' },
+  { label: 'Feed', href: '/feed' },
+  { label: 'Playlist', href: '/playlists' },
   { label: 'AI Coach', href: '/coach' },
 ];
 

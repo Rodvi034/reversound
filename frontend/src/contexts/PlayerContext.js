@@ -45,14 +45,13 @@ export const PlayerProvider = ({ children }) => {
       audio.load();
       setCurrentBeat(beat);
       setProgress(0);
-      // Record play
       try { await axios.post(`${API}/beats/${beat.id}/play`); } catch {}
     }
     try {
       await audio.play();
       setIsPlaying(true);
     } catch (e) {
-      console.error('Playback failed:', e);
+      console.warn('Playback failed:', e);
     }
   };
 
@@ -79,7 +78,11 @@ export const PlayerProvider = ({ children }) => {
   };
 
   return (
-    <PlayerContext.Provider value={{ currentBeat, isPlaying, progress, duration, volume, playBeat, togglePlay, seek, changeVolume, stop }}>
+    <PlayerContext.Provider value={{
+      currentBeat, isPlaying, progress, duration, volume,
+      audioRef,  // exposed for WaveSurfer integration
+      playBeat, togglePlay, seek, changeVolume, stop
+    }}>
       {children}
     </PlayerContext.Provider>
   );

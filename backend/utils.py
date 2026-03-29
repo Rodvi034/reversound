@@ -44,3 +44,26 @@ def moderate_message(text: str):
         if re.search(pattern, text, re.IGNORECASE):
             return True, f"Message blocked: contains {reason}. All communication must stay on ReverSound for your protection."
     return False, ""
+
+# ── Feed / Post Moderation ──────────────────────────────────────────────────────
+PROFANITY_LIST = [
+    "spam", "scam", "hack", "free money", "click here",
+    "amk", "orospu", "siktir", "piç", "göt",
+]
+
+SPAM_PATTERNS = [
+    (r'https?://\S+', 'external URL (not allowed in feed)'),
+    (r'(?i)(follow me|dm me|contact me|my ig|my insta|my discord|join my|check my)', 'self-promotion'),
+    (r'(.)\1{5,}', 'repeated characters (spam)'),
+    (r'[A-Z]{10,}', 'excessive caps'),
+]
+
+def moderate_post(text: str):
+    text_lower = text.lower()
+    for word in PROFANITY_LIST:
+        if word in text_lower:
+            return True, f"Post contains prohibited content: '{word}'"
+    for pattern, reason in SPAM_PATTERNS:
+        if re.search(pattern, text):
+            return True, f"Post blocked: {reason}"
+    return False, ""

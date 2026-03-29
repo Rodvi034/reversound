@@ -17,6 +17,10 @@ from routes.admin import admin_router
 from routes.coach import coach_router
 from routes.wallet import wallet_router
 from routes.subscriptions import subscriptions_router
+from routes.upload import upload_router, files_router, init_storage
+from routes.websocket import ws_router
+from routes.feed import feed_router
+from routes.playlists import playlists_router
 from seed_data import seed_demo_data
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s %(levelname)s %(message)s')
@@ -27,12 +31,15 @@ async def create_indexes(db):
     await db.users.create_index("username")
     await db.beats.create_index([("genre", 1), ("status", 1)])
     await db.beats.create_index([("status", 1), ("created_at", -1)])
+    await db.beats.create_index([("item_type", 1), ("status", 1)])
     await db.gigs.create_index([("category", 1), ("status", 1)])
     await db.orders.create_index("buyer_id")
     await db.orders.create_index("seller_id")
     await db.messages.create_index("conversation_id")
     await db.conversations.create_index("participants")
     await db.submissions.create_index("status")
+    await db.feed_posts.create_index([("created_at", -1)])
+    await db.files.create_index("storage_path")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -40,6 +47,10 @@ async def lifespan(app: FastAPI):
     await seed_admin(db)
     await create_indexes(db)
     await seed_demo_data(db)
+    try:
+        init_storage()
+    except Exception as e:
+        logger.warning(f"Storage init deferred: {e}")
     logger.info("ReverSound API started successfully")
     yield
     close_db_client()
@@ -58,9 +69,14 @@ app.add_middleware(
 
 for router in [
     auth_router, beats_router, gigs_router, orders_router,
-    messages_router, admin_router, coach_router, wallet_router, subscriptions_router
+    messages_router, admin_router, coach_router, wallet_router,
+    subscriptions_router, upload_router, files_router, feed_router,
+    playlists_router
 ]:
     app.include_router(router, prefix="/api")
+
+# WebSocket routes (no /api prefix needed — uses /ws/...)
+app.include_router(ws_router)
 
 @app.get("/api/health")
 async def health():

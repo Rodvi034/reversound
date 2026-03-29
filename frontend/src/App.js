@@ -21,6 +21,8 @@ import CreateGig from '@/pages/CreateGig';
 import AdminPortal from '@/pages/AdminPortal';
 import SubscriptionPage from '@/pages/SubscriptionPage';
 import WalletPage from '@/pages/WalletPage';
+import StudioFeed from '@/pages/StudioFeed';
+import PlaylistPage from '@/pages/PlaylistPage';
 
 function App() {
   return (
@@ -36,6 +38,8 @@ function App() {
               <Route path="/gigs" element={<GigMarketplace />} />
               <Route path="/gigs/:id" element={<GigDetail />} />
               <Route path="/subscriptions" element={<SubscriptionPage />} />
+              <Route path="/feed" element={<StudioFeed />} />
+              <Route path="/playlists" element={<PlaylistPage />} />
 
               {/* Protected */}
               <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />

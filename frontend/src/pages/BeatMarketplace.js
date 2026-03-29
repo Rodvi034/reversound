@@ -10,6 +10,11 @@ import Layout from '@/components/Layout';
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const GENRES = ['All', 'Trap', 'Hip-Hop', 'Pop', 'Drill', 'R&B', 'Techno', 'Lo-Fi', 'EDM', 'Rock', 'Afrobeat'];
+const ITEM_TYPES = [
+  { value: 'all', label: 'Tümü' },
+  { value: 'beat', label: 'Beat' },
+  { value: 'pack', label: 'Sound Pack' },
+];
 
 const BuyModal = ({ beat, onClose, token }) => {
   const [selectedLicense, setSelectedLicense] = useState(beat.licenses?.[0]?.type || 'basic');
@@ -88,6 +93,7 @@ const BeatMarketplace = () => {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [genre, setGenre] = useState('All');
+  const [itemType, setItemType] = useState('all');
   const [search, setSearch] = useState(searchParams.get('search') || '');
   const [bpmMin, setBpmMin] = useState('');
   const [bpmMax, setBpmMax] = useState('');
@@ -101,11 +107,12 @@ const BeatMarketplace = () => {
       if (search) params.append('search', search);
       if (bpmMin) params.append('bpm_min', bpmMin);
       if (bpmMax) params.append('bpm_max', bpmMax);
+      if (itemType && itemType !== 'all') params.append('item_type', itemType);
       const res = await axios.get(`${API}/beats?${params}`);
       setBeats(res.data.beats || []);
       setTotal(res.data.total || 0);
     } catch {} finally { setLoading(false); }
-  }, [page, genre, search, bpmMin, bpmMax]);
+  }, [page, genre, search, bpmMin, bpmMax, itemType]);
 
   useEffect(() => { fetchBeats(); }, [fetchBeats]);
 
@@ -127,6 +134,20 @@ const BeatMarketplace = () => {
               <Upload size={14} /> Beat Yükle
             </button>
           )}
+        </div>
+
+        {/* Type filter */}
+        <div className="flex gap-2 mb-3">
+          {ITEM_TYPES.map(t => (
+            <button
+              key={t.value}
+              onClick={() => { setItemType(t.value); setPage(1); }}
+              className={`px-4 py-1.5 rounded-md text-xs font-mono uppercase tracking-wider transition-all ${itemType === t.value ? 'bg-[#ec4899] text-white' : 'bg-[#141416] border border-white/5 text-[#a1a1aa] hover:text-white'}`}
+              data-testid={`type-filter-${t.value}`}
+            >
+              {t.label}
+            </button>
+          ))}
         </div>
 
         {/* Genre Tabs */}

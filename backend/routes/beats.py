@@ -22,9 +22,11 @@ class BeatCreate(BaseModel):
     key: str
     tags: List[str] = []
     description: Optional[str] = ""
-    audio_url: str
+    audio_url: Optional[str] = ""       # legacy URL or storage path
     cover_url: Optional[str] = ""
     licenses: List[LicenseTier]
+    item_type: str = "beat"             # beat | pack
+    pack_file_url: Optional[str] = ""  # .zip for packs
 
 class BeatUpdate(BaseModel):
     title: Optional[str] = None
@@ -34,6 +36,7 @@ class BeatUpdate(BaseModel):
     tags: Optional[List[str]] = None
     description: Optional[str] = None
     cover_url: Optional[str] = None
+    audio_url: Optional[str] = None
     licenses: Optional[List[LicenseTier]] = None
 
 @beats_router.get("")
@@ -43,6 +46,7 @@ async def list_beats(
     bpm_max: Optional[int] = None,
     key: Optional[str] = None,
     search: Optional[str] = None,
+    item_type: Optional[str] = None,    # beat | pack | All
     page: int = 1,
     limit: int = 20
 ):
@@ -56,12 +60,23 @@ async def list_beats(
         query.setdefault("bpm", {})["$lte"] = bpm_max
     if key:
         query["key"] = {"$regex": key, "$options": "i"}
+    if item_type and item_type.lower() != "all":
+        if item_type.lower() == "beat":
+            query["$or"] = [{"item_type": "beat"}, {"item_type": {"$exists": False}}]
+        else:
+            query["item_type"] = item_type.lower()
     if search:
-        query["$or"] = [
+        search_filter = [
             {"title": {"$regex": search, "$options": "i"}},
             {"producer_name": {"$regex": search, "$options": "i"}},
             {"tags": {"$regex": search, "$options": "i"}}
         ]
+        if "$or" in query:
+            # Combine: (item_type OR) AND (search OR)
+            type_or = query.pop("$or")
+            query["$and"] = [{"$or": type_or}, {"$or": search_filter}]
+        else:
+            query["$or"] = search_filter
 
     skip = (page - 1) * limit
     total = await db.beats.count_documents(query)
@@ -95,6 +110,7 @@ async def create_beat(body: BeatCreate, request: Request):
         "producer_id": user["id"],
         "producer_name": user["name"],
         "producer_username": user.get("username", ""),
+        "item_type": body.item_type or "beat",
         "plays": 0,
         "purchases": 0,
         "status": "approved" if user["role"] == "admin" else "pending",

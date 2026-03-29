@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { Send, MessageSquare, AlertTriangle, Loader } from 'lucide-react';
+import { Send, MessageSquare, AlertTriangle, Loader, Wifi, WifiOff } from 'lucide-react';
 import axios from 'axios';
 import Layout from '@/components/Layout';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const WS_BASE = process.env.REACT_APP_BACKEND_URL
+  ?.replace('https://', 'wss://')
+  ?.replace('http://', 'ws://') || 'ws://localhost:8001';
 
 const Messaging = () => {
   const { id: convId } = useParams();
@@ -16,11 +19,13 @@ const Messaging = () => {
   const [messages, setMessages] = useState([]);
   const [activeConv, setActiveConv] = useState(convId || null);
   const [newMessage, setNewMessage] = useState('');
-  const [sending, setSending] = useState(false);
   const [loadingConvs, setLoadingConvs] = useState(true);
   const [loadingMsgs, setLoadingMsgs] = useState(false);
+  const [wsConnected, setWsConnected] = useState(false);
   const messagesEndRef = useRef(null);
+  const wsRef = useRef(null);
 
+  // Fetch conversations
   const fetchConversations = useCallback(async () => {
     try {
       const res = await axios.get(`${API}/conversations`,
@@ -29,60 +34,68 @@ const Messaging = () => {
     } catch {} finally { setLoadingConvs(false); }
   }, [token]);
 
-  const fetchMessages = useCallback(async (convId) => {
-    if (!convId) return;
+  // Fetch message history (initial load)
+  const fetchMessages = useCallback(async (cid) => {
+    if (!cid) return;
     setLoadingMsgs(true);
     try {
-      const res = await axios.get(`${API}/conversations/${convId}/messages`,
+      const res = await axios.get(`${API}/conversations/${cid}/messages`,
         { headers: { Authorization: `Bearer ${token}` }, withCredentials: true });
       setMessages(res.data.messages || []);
     } catch {} finally { setLoadingMsgs(false); }
   }, [token]);
 
+  // Connect WebSocket for active conversation
+  const connectWS = useCallback((cid) => {
+    if (wsRef.current) {
+      wsRef.current.close();
+      wsRef.current = null;
+    }
+    if (!cid || !token) return;
+
+    const url = `${WS_BASE}/ws/conversations/${cid}?token=${token}`;
+    const ws = new WebSocket(url);
+    wsRef.current = ws;
+
+    ws.onopen = () => setWsConnected(true);
+    ws.onclose = () => setWsConnected(false);
+    ws.onerror = () => setWsConnected(false);
+    ws.onmessage = (evt) => {
+      try {
+        const msg = JSON.parse(evt.data);
+        setMessages(prev => {
+          // Avoid duplicates
+          if (prev.find(m => m.id === msg.id)) return prev;
+          return [...prev, msg];
+        });
+        // Refresh conversations to update last_message
+        fetchConversations();
+      } catch {}
+    };
+  }, [token, fetchConversations]);
+
   useEffect(() => { fetchConversations(); }, [fetchConversations]);
 
   useEffect(() => {
-    if (activeConv) { fetchMessages(activeConv); }
-  }, [activeConv, fetchMessages]);
+    if (activeConv) {
+      fetchMessages(activeConv);
+      connectWS(activeConv);
+    }
+    return () => { if (wsRef.current) wsRef.current.close(); };
+  }, [activeConv, fetchMessages, connectWS]);
 
-  useEffect(() => {
-    if (convId) setActiveConv(convId);
-  }, [convId]);
+  useEffect(() => { if (convId) setActiveConv(convId); }, [convId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Auto-refresh messages every 5 seconds
-  useEffect(() => {
-    if (!activeConv) return;
-    const interval = setInterval(() => fetchMessages(activeConv), 5000);
-    return () => clearInterval(interval);
-  }, [activeConv, fetchMessages]);
-
-  const sendMessage = async (e) => {
+  const sendMessage = (e) => {
     e.preventDefault();
-    if (!newMessage.trim() || !activeConv || sending) return;
-    setSending(true);
-    const content = newMessage;
+    const content = newMessage.trim();
+    if (!content || !wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
+    wsRef.current.send(JSON.stringify({ content }));
     setNewMessage('');
-    try {
-      const res = await axios.post(
-        `${API}/conversations/${activeConv}/messages`,
-        { content },
-        { headers: { Authorization: `Bearer ${token}` }, withCredentials: true }
-      );
-      setMessages(prev => [...prev, res.data]);
-      if (res.data.warning) {
-        // Show moderation warning
-        setTimeout(() => {
-          setMessages(prev => prev.map(m => m.id === res.data.id ? { ...m, _warning: res.data.warning } : m));
-        }, 100);
-      }
-    } catch (err) {
-      // Restore message if failed
-      setNewMessage(content);
-    } finally { setSending(false); }
   };
 
   const activeConvData = conversations.find(c => c.id === activeConv);
@@ -95,7 +108,7 @@ const Messaging = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-[600px]">
           {/* Conversations list */}
           <div className="rs-card overflow-hidden flex flex-col">
-            <div className="px-4 py-3 border-b border-white/5">
+            <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between">
               <p className="text-xs font-mono uppercase text-[#a1a1aa]">Konuşmalar</p>
             </div>
             <div className="flex-1 overflow-y-auto">
@@ -145,11 +158,16 @@ const Messaging = () => {
                   <div className="w-8 h-8 rounded-full bg-[#8b5cf6]/20 border border-[#8b5cf6]/30 flex items-center justify-center text-xs font-bold text-[#8b5cf6]">
                     {activeConvData?.other_user?.name?.charAt(0)?.toUpperCase() || '?'}
                   </div>
-                  <div>
+                  <div className="flex-1">
                     <p className="text-sm font-medium text-white">{activeConvData?.other_user?.name || 'Kullanıcı'}</p>
-                    <p className="text-xs text-[#10b981]">Çevrimiçi</p>
+                    <div className="flex items-center gap-1 text-xs">
+                      {wsConnected
+                        ? <><Wifi size={10} className="text-[#10b981]" /><span className="text-[#10b981]">Gerçek zamanlı</span></>
+                        : <><WifiOff size={10} className="text-[#a1a1aa]" /><span className="text-[#a1a1aa]">Bağlanıyor...</span></>
+                      }
+                    </div>
                   </div>
-                  <div className="ml-auto flex items-center gap-1.5 text-[#f59e0b] bg-[#f59e0b]/10 border border-[#f59e0b]/20 px-3 py-1 rounded-md">
+                  <div className="flex items-center gap-1.5 text-[#f59e0b] bg-[#f59e0b]/10 border border-[#f59e0b]/20 px-3 py-1 rounded-md">
                     <AlertTriangle size={10} />
                     <span className="text-xs font-mono">Kişisel bilgi paylaşımı yasaktır</span>
                   </div>
@@ -161,10 +179,10 @@ const Messaging = () => {
                     <div className="flex items-center justify-center py-8">
                       <Loader size={18} className="text-[#8b5cf6] animate-spin" />
                     </div>
-                  ) : messages.map(msg => {
+                  ) : messages.map((msg, i) => {
                     const isMine = msg.sender_id === user?.id;
                     return (
-                      <div key={msg.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
+                      <div key={msg.id || i} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
                         <div className={`max-w-[75%] rounded-lg px-4 py-2.5 ${
                           msg.is_flagged
                             ? 'bg-[#ec4899]/10 border border-[#ec4899]/20'
@@ -196,17 +214,18 @@ const Messaging = () => {
                     type="text"
                     value={newMessage}
                     onChange={e => setNewMessage(e.target.value)}
-                    placeholder="Mesajını yaz... (Kişisel bilgi paylaşma)"
-                    className="rs-input flex-1 text-sm h-9"
+                    placeholder={wsConnected ? "Mesajını yaz..." : "Bağlanıyor..."}
+                    disabled={!wsConnected}
+                    className="rs-input flex-1 text-sm h-9 disabled:opacity-50"
                     data-testid="message-input"
                   />
                   <button
                     type="submit"
-                    disabled={sending || !newMessage.trim()}
-                    className="w-9 h-9 bg-[#8b5cf6] hover:bg-[#7c3aed] disabled:opacity-40 text-white rounded-md transition-all flex items-center justify-center flex-shrink-0"
+                    disabled={!wsConnected || !newMessage.trim()}
+                    className="w-9 h-9 bg-[#8b5cf6] hover:bg-[#7c3aed] disabled:opacity-40 text-white rounded-md transition-all flex items-center justify-center"
                     data-testid="send-message-btn"
                   >
-                    {sending ? <Loader size={14} className="animate-spin" /> : <Send size={14} />}
+                    <Send size={14} />
                   </button>
                 </form>
               </>

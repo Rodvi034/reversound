@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { Upload, Plus, Trash2, Loader, ChevronLeft } from 'lucide-react';
+import { Upload, Plus, Trash2, Loader, ChevronLeft, Package, Music } from 'lucide-react';
 import axios from 'axios';
 import Layout from '@/components/Layout';
+import FileUpload from '@/components/FileUpload';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const GENRES = ['Trap', 'Hip-Hop', 'Pop', 'Drill', 'R&B', 'Techno', 'Lo-Fi', 'EDM', 'Rock', 'Afrobeat', 'Reggaeton', 'Other'];
@@ -19,11 +20,11 @@ const UploadBeat = () => {
   const navigate = useNavigate();
   const { token } = useAuth();
 
-  const [form, setForm] = useState({
-    title: '', genre: 'Trap', bpm: 140, key: 'Am',
-    description: '', audio_url: '', cover_url: '',
-    tags: [],
-  });
+  const [itemType, setItemType] = useState('beat'); // beat | pack
+  const [form, setForm] = useState({ title: '', genre: 'Trap', bpm: 140, key: 'Am', description: '', tags: [] });
+  const [audioPath, setAudioPath] = useState('');
+  const [coverPath, setCoverPath] = useState('');
+  const [packPath, setPackPath] = useState('');
   const [tagInput, setTagInput] = useState('');
   const [licenses, setLicenses] = useState(DEFAULT_LICENSES);
   const [loading, setLoading] = useState(false);
@@ -33,17 +34,24 @@ const UploadBeat = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    if (itemType === 'beat' && !audioPath) { setError('Lütfen ses dosyası yükle'); return; }
+    if (itemType === 'pack' && !packPath) { setError('Lütfen pack dosyası yükle (.zip)'); return; }
     setLoading(true);
     try {
-      await axios.post(
-        `${API}/beats`,
-        { ...form, licenses },
-        { headers: { Authorization: `Bearer ${token}` }, withCredentials: true }
-      );
-      setSuccess('Beat başarıyla yüklendi! İnceleme sonrası yayına alınacak.');
+      const payload = {
+        ...form,
+        item_type: itemType,
+        audio_url: audioPath || '',
+        cover_url: coverPath || '',
+        pack_file_url: packPath || '',
+        licenses,
+      };
+      await axios.post(`${API}/beats`, payload,
+        { headers: { Authorization: `Bearer ${token}` }, withCredentials: true });
+      setSuccess(`${itemType === 'pack' ? 'Pack' : 'Beat'} başarıyla yüklendi! İnceleme sonrası yayına alınacak.`);
       setTimeout(() => navigate('/beats'), 2000);
     } catch (err) {
-      setError(err.response?.data?.detail || 'Beat yüklenemedi');
+      setError(err.response?.data?.detail || 'Yükleme başarısız');
     } finally { setLoading(false); }
   };
 
@@ -65,7 +73,27 @@ const UploadBeat = () => {
           <ChevronLeft size={16} /> Beat Marketine Dön
         </button>
 
-        <h1 className="font-heading font-bold text-2xl text-white mb-6">Beat Yükle</h1>
+        <h1 className="font-heading font-bold text-2xl text-white mb-6">İçerik Yükle</h1>
+
+        {/* Item Type */}
+        <div className="flex bg-[#141416] border border-white/5 rounded-lg p-1 mb-6 gap-1">
+          <button
+            type="button"
+            onClick={() => setItemType('beat')}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-md text-sm font-medium transition-all ${itemType === 'beat' ? 'bg-[#8b5cf6] text-white shadow-glow-sm' : 'text-[#a1a1aa] hover:text-white'}`}
+            data-testid="type-beat"
+          >
+            <Music size={14} /> Beat
+          </button>
+          <button
+            type="button"
+            onClick={() => setItemType('pack')}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-md text-sm font-medium transition-all ${itemType === 'pack' ? 'bg-[#8b5cf6] text-white shadow-glow-sm' : 'text-[#a1a1aa] hover:text-white'}`}
+            data-testid="type-pack"
+          >
+            <Package size={14} /> Sound Pack
+          </button>
+        </div>
 
         {error && <div className="mb-4 p-3 rounded-md bg-red-500/10 border border-red-500/20 text-red-400 text-sm">{error}</div>}
         {success && <div className="mb-4 p-3 rounded-md bg-[#10b981]/10 border border-[#10b981]/20 text-[#10b981] text-sm">{success}</div>}
@@ -73,11 +101,14 @@ const UploadBeat = () => {
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Basic info */}
           <div className="rs-card p-5 space-y-4">
-            <h3 className="text-sm font-semibold text-white font-mono uppercase tracking-wider">Beat Bilgileri</h3>
+            <h3 className="text-sm font-semibold text-white font-mono uppercase tracking-wider">
+              {itemType === 'pack' ? 'Pack Bilgileri' : 'Beat Bilgileri'}
+            </h3>
             <div>
               <label className="block text-xs font-mono uppercase text-[#a1a1aa] mb-1.5">Başlık *</label>
               <input type="text" required value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-                placeholder="Dark Trap 808" className="rs-input" data-testid="beat-title-input" />
+                placeholder={itemType === 'pack' ? 'Trap Drum Kit Vol.1' : 'Dark Trap 808'}
+                className="rs-input" data-testid="beat-title-input" />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -104,24 +135,44 @@ const UploadBeat = () => {
             <div>
               <label className="block text-xs font-mono uppercase text-[#a1a1aa] mb-1.5">Açıklama</label>
               <textarea rows={3} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                placeholder="Beat hakkında açıklama..." className="rs-input resize-none text-sm" data-testid="beat-description" />
+                placeholder="İçerik hakkında açıklama..." className="rs-input resize-none text-sm" data-testid="beat-description" />
             </div>
           </div>
 
-          {/* Audio & Cover */}
+          {/* File uploads */}
           <div className="rs-card p-5 space-y-4">
-            <h3 className="text-sm font-semibold text-white font-mono uppercase tracking-wider">Medya</h3>
-            <div>
-              <label className="block text-xs font-mono uppercase text-[#a1a1aa] mb-1.5">Ses Dosyası URL * (MP3/WAV)</label>
-              <input type="url" required value={form.audio_url} onChange={e => setForm(f => ({ ...f, audio_url: e.target.value }))}
-                placeholder="https://..." className="rs-input" data-testid="beat-audio-url" />
-              <p className="text-xs text-[#a1a1aa] mt-1">Ses dosyanı Google Drive, Dropbox veya S3'te barındır.</p>
-            </div>
-            <div>
-              <label className="block text-xs font-mono uppercase text-[#a1a1aa] mb-1.5">Kapak Görseli URL</label>
-              <input type="url" value={form.cover_url} onChange={e => setForm(f => ({ ...f, cover_url: e.target.value }))}
-                placeholder="https://..." className="rs-input" data-testid="beat-cover-url" />
-            </div>
+            <h3 className="text-sm font-semibold text-white font-mono uppercase tracking-wider">Dosyalar</h3>
+
+            {itemType === 'beat' ? (
+              <FileUpload
+                type="audio"
+                label="Ses Dosyası * (MP3 / WAV / FLAC)"
+                hint="Önizleme için MP3, satış için WAV önerilir"
+                onUploaded={r => setAudioPath(r.url)}
+                data-testid="audio-upload"
+              />
+            ) : (
+              <FileUpload
+                type="pack"
+                label="Sound Pack Dosyası * (.zip)"
+                hint="Kick, snare, hi-hat, loop ve stem dosyaları"
+                onUploaded={r => setPackPath(r.url)}
+              />
+            )}
+
+            {itemType === 'beat' && (
+              <FileUpload
+                type="audio"
+                label="Önizleme Dosyası (opsiyonel — kırpık/watermarked MP3)"
+                onUploaded={r => {}}
+              />
+            )}
+
+            <FileUpload
+              type="image"
+              label="Kapak Görseli (opsiyonel)"
+              onUploaded={r => setCoverPath(r.url)}
+            />
           </div>
 
           {/* Tags */}
@@ -131,22 +182,20 @@ const UploadBeat = () => {
               <input type="text" value={tagInput} onChange={e => setTagInput(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addTag())}
                 placeholder="trap, dark, 808..." className="rs-input flex-1 text-sm h-9" data-testid="beat-tag-input" />
-              <button type="button" onClick={addTag} className="px-3 py-1.5 bg-[#8b5cf6]/10 border border-[#8b5cf6]/30 text-[#8b5cf6] rounded-md text-sm hover:bg-[#8b5cf6]/20 transition-colors">
+              <button type="button" onClick={addTag} className="px-3 py-1.5 bg-[#8b5cf6]/10 border border-[#8b5cf6]/30 text-[#8b5cf6] rounded-md text-sm hover:bg-[#8b5cf6]/20">
                 <Plus size={14} />
               </button>
             </div>
-            {form.tags.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {form.tags.map(tag => (
-                  <span key={tag} className="badge-genre flex items-center gap-1">
-                    #{tag}
-                    <button type="button" onClick={() => setForm(f => ({ ...f, tags: f.tags.filter(t => t !== tag) }))} className="hover:text-[#ec4899]">
-                      <Trash2 size={10} />
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
+            <div className="flex flex-wrap gap-2">
+              {form.tags.map(tag => (
+                <span key={tag} className="badge-genre flex items-center gap-1">
+                  #{tag}
+                  <button type="button" onClick={() => setForm(f => ({ ...f, tags: f.tags.filter(t => t !== tag) }))} className="hover:text-[#ec4899]">
+                    <Trash2 size={10} />
+                  </button>
+                </span>
+              ))}
+            </div>
           </div>
 
           {/* License tiers */}
@@ -180,7 +229,7 @@ const UploadBeat = () => {
             className="w-full bg-[#8b5cf6] hover:bg-[#7c3aed] disabled:opacity-50 text-white font-semibold py-3 rounded-md transition-all hover:shadow-glow flex items-center justify-center gap-2"
             data-testid="upload-beat-submit"
           >
-            {loading ? <Loader size={16} className="animate-spin" /> : <><Upload size={16} /> Beat Yükle</>}
+            {loading ? <Loader size={16} className="animate-spin" /> : <><Upload size={16} /> {itemType === 'pack' ? 'Pack Yükle' : 'Beat Yükle'}</>}
           </button>
         </form>
       </div>
