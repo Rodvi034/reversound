@@ -13,7 +13,22 @@ ReverSound — Music Career Ecosystem & Freelance Marketplace
 - **AI:** Gemini 3.1 Pro Preview via emergentintegrations (EMERGENT_LLM_KEY)
 - **Escrow:** Mock escrow system (Iyzico/PayTR ready architecture)
 
-## Implemented Features (v4.0 — Sprint 4 — 2026-03-29)
+## Implemented Features (v6.0 — Sprint 6 — 2026-03-31)
+
+### Sprint 6 Additions
+- [x] **BeatStars-Inspired Navbar** — Grouped "Keşfet" dropdown (7 items), "Oluştur" dropdown (role-filtered), search bar with category selector, Cart badge icon, notification bell, theme/lang toggles, "Start Selling" CTA
+- [x] **Global Cart System** — CartContext (localStorage-backed), CartDrawer (slide-in), "Add to Cart" + "Sepete Ekle" buttons on beats, bulk checkout from wallet
+- [x] **Favorites System** — FavoritesContext (API-backed), heart buttons on all beat cards, `/favorites` page with tabbed beat/gig lists, toggle API
+- [x] **New Landing Page** — Full-screen hero with center search bar (BeatStars style), Trending Tracks horizontal carousel cards with price buttons, "Trusted By" dual-direction marquee, "Made on ReverSound" alternating vertical scroll, Popular Genres vertical card grid, Testimonials, AI Coach CTA, full footer
+- [x] **Custom Offers in Chat** — `POST /api/conversations/{id}/offer`, accept/decline endpoints, escrow creation on accept
+- [x] **Upsell Modal** — `UpsellModal.js` component for feature gating with tier benefits + upgrade CTA
+- [x] **Job Requests Board** — `/jobs` page, buyers post project briefs, sellers submit proposals with price/delivery, category filtering
+- [x] **Blog System** — `/blog` page, post listing by category, admin/Pro creators can publish
+- [x] **Rever Studio Landing** — `/studio` page with feature grid, 3-tier independent billing (Basic ₺149/Pro ₺399/Elite ₺799), "coming soon" status
+- [x] **My Roadmap** — `/roadmap` gamified career dashboard with 8 milestones, XP system, real stats integration, AI Coach CTA
+- [x] **Public Profile** — `/u/{username}` with full OG meta tags for social sharing, tabs for beats/gigs/packs, alternating vertical scroll reference
+- [x] **MarqueeLogos Component** — CSS-animated dual-direction horizontal marquee, AlternatingScroll two-column vertical
+- [x] **UpsellModal Component** — Premium feature gate with tier comparison + upgrade flow
 
 ### Sprint 4 Additions
 - [x] **Pro Analytics Dashboard** — Recharts-powered dashboard at `/analytics` (gated Pro/Enterprise): revenue LineChart, beat play heatmap (7-day × 24h grid), gig conversion BarChart, audience demographics PieChart, top beats performance table

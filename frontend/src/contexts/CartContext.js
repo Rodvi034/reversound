@@ -18,10 +18,13 @@ export const CartProvider = ({ children }) => {
     setItems(prev => {
       const key = item.type === 'beat' ? `${item.id}-${item.license_type}` : item.id;
       const exists = prev.find(i => (i.type === 'beat' ? `${i.id}-${i.license_type}` : i.id) === key);
-      if (exists) return prev;
+      if (exists) {
+        setIsOpen(true);
+        return prev;
+      }
+      setIsOpen(true);
       return [...prev, { ...item, cart_key: key }];
     });
-    setIsOpen(true);
   };
 
   const removeItem = (cartKey) => {
