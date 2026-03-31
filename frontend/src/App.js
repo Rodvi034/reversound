@@ -6,9 +6,10 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { PlayerProvider } from '@/contexts/PlayerContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { I18nProvider } from '@/contexts/i18nContext';
+import { CartProvider } from '@/contexts/CartContext';
+import { FavoritesProvider } from '@/contexts/FavoritesContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
 
-// Pages
 import LandingPage from '@/pages/LandingPage';
 import AuthPage from '@/pages/AuthPage';
 import OnboardingPage from '@/pages/OnboardingPage';
@@ -31,6 +32,12 @@ import SupportCenter from '@/pages/SupportCenter';
 import LiveRoom from '@/pages/LiveRoom';
 import AnalyticsDashboard from '@/pages/AnalyticsDashboard';
 import PackDetail from '@/pages/PackDetail';
+import PublicProfile from '@/pages/PublicProfile';
+import FavoritesPage from '@/pages/FavoritesPage';
+import JobBoard from '@/pages/JobBoard';
+import BlogPage from '@/pages/BlogPage';
+import ReverStudio from '@/pages/ReverStudio';
+import MyRoadmap from '@/pages/MyRoadmap';
 
 function App() {
   return (
@@ -38,43 +45,53 @@ function App() {
       <BrowserRouter>
         <ThemeProvider>
           <I18nProvider>
-            <AuthProvider>
-              <PlayerProvider>
-                <Routes>
-                  {/* Public */}
-                  <Route path="/" element={<LandingPage />} />
-                  <Route path="/auth" element={<AuthPage />} />
-                  <Route path="/beats" element={<BeatMarketplace />} />
-                  <Route path="/gigs" element={<GigMarketplace />} />
-                  <Route path="/gigs/:id" element={<GigDetail />} />
-                  <Route path="/subscriptions" element={<SubscriptionPage />} />
-                  <Route path="/feed" element={<StudioFeed />} />
-                  <Route path="/playlists" element={<PlaylistPage />} />
+            <CartProvider>
+              <AuthProvider>
+                <FavoritesProvider>
+                  <PlayerProvider>
+                    <Routes>
+                      {/* Public */}
+                      <Route path="/" element={<LandingPage />} />
+                      <Route path="/auth" element={<AuthPage />} />
+                      <Route path="/beats" element={<BeatMarketplace />} />
+                      <Route path="/gigs" element={<GigMarketplace />} />
+                      <Route path="/gigs/:id" element={<GigDetail />} />
+                      <Route path="/subscriptions" element={<SubscriptionPage />} />
+                      <Route path="/feed" element={<StudioFeed />} />
+                      <Route path="/playlists" element={<PlaylistPage />} />
+                      <Route path="/blog" element={<BlogPage />} />
+                      <Route path="/studio" element={<ReverStudio />} />
+                      <Route path="/packs/:id" element={<PackDetail />} />
+                      <Route path="/u/:username" element={<PublicProfile />} />
+                      <Route path="/jobs" element={<JobBoard />} />
 
-                  {/* Protected */}
-                  <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
-                  <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-                  <Route path="/orders" element={<ProtectedRoute><OrderManagement /></ProtectedRoute>} />
-                  <Route path="/orders/:id" element={<ProtectedRoute><OrderDetail /></ProtectedRoute>} />
-                  <Route path="/messages" element={<ProtectedRoute><Messaging /></ProtectedRoute>} />
-                  <Route path="/messages/:id" element={<ProtectedRoute><Messaging /></ProtectedRoute>} />
-                  <Route path="/coach" element={<ProtectedRoute><AICareerCoach /></ProtectedRoute>} />
-                  <Route path="/wallet" element={<ProtectedRoute><WalletPage /></ProtectedRoute>} />
-                  <Route path="/beats/upload" element={<ProtectedRoute><UploadBeat /></ProtectedRoute>} />
-                  <Route path="/gigs/create" element={<ProtectedRoute><CreateGig /></ProtectedRoute>} />
-                  <Route path="/support" element={<ProtectedRoute><SupportCenter /></ProtectedRoute>} />
-                  <Route path="/liveroom" element={<ProtectedRoute><LiveRoom /></ProtectedRoute>} />
-                  <Route path="/liveroom/:roomId" element={<ProtectedRoute><LiveRoom /></ProtectedRoute>} />
-                  <Route path="/analytics" element={<ProtectedRoute><AnalyticsDashboard /></ProtectedRoute>} />
-                  <Route path="/packs/:id" element={<PackDetail />} />
+                      {/* Protected */}
+                      <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
+                      <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                      <Route path="/roadmap" element={<ProtectedRoute><MyRoadmap /></ProtectedRoute>} />
+                      <Route path="/orders" element={<ProtectedRoute><OrderManagement /></ProtectedRoute>} />
+                      <Route path="/orders/:id" element={<ProtectedRoute><OrderDetail /></ProtectedRoute>} />
+                      <Route path="/messages" element={<ProtectedRoute><Messaging /></ProtectedRoute>} />
+                      <Route path="/messages/:id" element={<ProtectedRoute><Messaging /></ProtectedRoute>} />
+                      <Route path="/coach" element={<ProtectedRoute><AICareerCoach /></ProtectedRoute>} />
+                      <Route path="/wallet" element={<ProtectedRoute><WalletPage /></ProtectedRoute>} />
+                      <Route path="/beats/upload" element={<ProtectedRoute><UploadBeat /></ProtectedRoute>} />
+                      <Route path="/gigs/create" element={<ProtectedRoute><CreateGig /></ProtectedRoute>} />
+                      <Route path="/support" element={<ProtectedRoute><SupportCenter /></ProtectedRoute>} />
+                      <Route path="/liveroom" element={<ProtectedRoute><LiveRoom /></ProtectedRoute>} />
+                      <Route path="/liveroom/:roomId" element={<ProtectedRoute><LiveRoom /></ProtectedRoute>} />
+                      <Route path="/analytics" element={<ProtectedRoute><AnalyticsDashboard /></ProtectedRoute>} />
+                      <Route path="/favorites" element={<ProtectedRoute><FavoritesPage /></ProtectedRoute>} />
 
-                  {/* Admin only */}
-                  <Route path="/admin" element={<ProtectedRoute adminOnly><AdminPortal /></ProtectedRoute>} />
+                      {/* Admin only */}
+                      <Route path="/admin" element={<ProtectedRoute adminOnly><AdminPortal /></ProtectedRoute>} />
 
-                  <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
-              </PlayerProvider>
-            </AuthProvider>
+                      <Route path="*" element={<Navigate to="/" replace />} />
+                    </Routes>
+                  </PlayerProvider>
+                </FavoritesProvider>
+              </AuthProvider>
+            </CartProvider>
           </I18nProvider>
         </ThemeProvider>
       </BrowserRouter>

@@ -17,6 +17,114 @@ class ConversationCreate(BaseModel):
 class MessageCreate(BaseModel):
     content: str
 
+class CustomOfferCreate(BaseModel):
+    price: float
+    delivery_days: int
+    description: str
+
+@messages_router.post("/{conversation_id}/offer")
+async def send_custom_offer(conversation_id: str, body: CustomOfferCreate, request: Request):
+    """Send a custom offer within a conversation."""
+    user = await get_current_user(request)
+    db = get_db()
+    conv = await db.conversations.find_one({"_id": ObjectId(conversation_id)})
+    if not conv:
+        raise HTTPException(404, "Conversation not found")
+    if user["id"] not in conv["participants"]:
+        raise HTTPException(403, "Not authorized")
+
+    offer_doc = {
+        "conversation_id": conversation_id,
+        "sender_id": user["id"],
+        "sender_name": user["name"],
+        "content": f"Özel Teklif: ₺{body.price:.2f} — {body.delivery_days} gün teslim",
+        "message_type": "custom_offer",
+        "offer_price": body.price,
+        "offer_days": body.delivery_days,
+        "offer_description": body.description,
+        "offer_status": "pending",
+        "is_flagged": False,
+        "flag_reason": None,
+        "created_at": datetime.now(timezone.utc)
+    }
+    result = await db.messages.insert_one(offer_doc)
+    offer_doc["_id"] = result.inserted_id
+    await db.conversations.update_one(
+        {"_id": ObjectId(conversation_id)},
+        {"$set": {"last_message": offer_doc["content"][:100], "last_message_at": offer_doc["created_at"]}}
+    )
+    return doc_to_dict(offer_doc)
+
+@messages_router.post("/{conversation_id}/offer/{message_id}/accept")
+async def accept_custom_offer(conversation_id: str, message_id: str, requirements: str = "Custom offer accepted", request: Request = None):
+    """Buyer accepts a custom offer → creates an escrow order."""
+    user = await get_current_user(request)
+    db = get_db()
+    msg = await db.messages.find_one({"_id": ObjectId(message_id), "conversation_id": conversation_id, "message_type": "custom_offer"})
+    if not msg:
+        raise HTTPException(404, "Offer not found")
+    if msg["offer_status"] != "pending":
+        raise HTTPException(400, f"Offer already {msg['offer_status']}")
+    if msg["sender_id"] == user["id"]:
+        raise HTTPException(400, "Cannot accept your own offer")
+
+    # Get conversation participants to identify buyer/seller
+    conv = await db.conversations.find_one({"_id": ObjectId(conversation_id)})
+    seller_id = msg["sender_id"]
+    buyer_id = user["id"]
+
+    # Check buyer balance
+    buyer = await db.users.find_one({"_id": ObjectId(buyer_id)})
+    price = msg["offer_price"]
+    if buyer.get("wallet_balance", 0) < price:
+        raise HTTPException(400, f"Insufficient balance. Need ₺{price:.2f}")
+
+    # Get seller name
+    seller = await db.users.find_one({"_id": ObjectId(seller_id)})
+    seller_name = seller.get("name", "") if seller else ""
+
+    # Deduct escrow
+    await db.users.update_one({"_id": ObjectId(buyer_id)}, {"$inc": {"wallet_balance": -price, "escrow_balance": price}})
+
+    from datetime import timedelta
+    due_date = datetime.now(timezone.utc) + timedelta(days=msg["offer_days"])
+    order_doc = {
+        "buyer_id": buyer_id,
+        "buyer_name": buyer.get("name", "") if buyer else "",
+        "seller_id": seller_id,
+        "seller_name": seller_name,
+        "gig_id": None,
+        "gig_title": f"Özel Teklif: {msg['offer_description'][:50]}",
+        "tier": "custom",
+        "tier_description": msg["offer_description"],
+        "price": price,
+        "delivery_days": msg["offer_days"],
+        "revisions": 1,
+        "requirements": requirements,
+        "status": "funded",
+        "escrow_status": "held",
+        "due_date": due_date,
+        "revisions_used": 0,
+        "attachments": [],
+        "created_at": datetime.now(timezone.utc)
+    }
+    result = await db.orders.insert_one(order_doc)
+    order_doc["_id"] = result.inserted_id
+
+    await db.messages.update_one({"_id": ObjectId(message_id)}, {"$set": {"offer_status": "accepted"}})
+
+    return {"message": "Teklif kabul edildi. Escrow oluşturuldu.", "order_id": str(result.inserted_id)}
+
+@messages_router.post("/{conversation_id}/offer/{message_id}/decline")
+async def decline_offer(conversation_id: str, message_id: str, request: Request):
+    user = await get_current_user(request)
+    db = get_db()
+    await db.messages.update_one(
+        {"_id": ObjectId(message_id), "conversation_id": conversation_id},
+        {"$set": {"offer_status": "declined"}}
+    )
+    return {"message": "Teklif reddedildi"}
+
 @messages_router.get("")
 async def list_conversations(request: Request):
     user = await get_current_user(request)

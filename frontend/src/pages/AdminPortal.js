@@ -3,6 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Users, Music2, Briefcase, CheckCircle, XCircle, Shield, AlertTriangle, Loader, ShieldCheck } from 'lucide-react';
 import axios from 'axios';
 import Layout from '@/components/Layout';
+import Logo, { LogoMark } from '@/components/Logo';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -14,6 +15,7 @@ const AdminPortal = () => {
   const [beats, setBeats] = useState([]);
   const [gigs, setGigs] = useState([]);
   const [submissions, setSubmissions] = useState([]);
+  const [financials, setFinancials] = useState(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState('');
 
@@ -38,6 +40,9 @@ const AdminPortal = () => {
       } else if (tab === 'submissions') {
         const res = await axios.get(`${API}/admin/submissions`, { headers, ...creds });
         setSubmissions(res.data || []);
+      } else if (tab === 'financials') {
+        const res = await axios.get(`${API}/admin/financials`, { headers, ...creds });
+        setFinancials(res.data);
       }
     } catch {} finally { setLoading(false); }
   };
@@ -74,6 +79,7 @@ const AdminPortal = () => {
     { id: 'beats', label: 'Beat Onay', icon: Music2 },
     { id: 'gigs', label: 'Gig Onay', icon: Briefcase },
     { id: 'submissions', label: 'Başvurular', icon: CheckCircle },
+    { id: 'financials', label: 'Finansal', icon: ShieldCheck },
   ];
 
   return (
@@ -82,6 +88,9 @@ const AdminPortal = () => {
         <div className="flex items-center gap-3 mb-6">
           <ShieldCheck size={22} className="text-[#ec4899]" />
           <h1 className="font-heading font-bold text-2xl text-white">Admin Portal</h1>
+          <div className="ml-auto opacity-30">
+            <LogoMark size="sm" />
+          </div>
         </div>
 
         {/* Tabs */}
@@ -298,6 +307,69 @@ const AdminPortal = () => {
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+
+            {/* Financials */}
+            {activeTab === 'financials' && financials && (
+              <div className="space-y-5">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  {[
+                    { label: 'Platform Geliri (Gig)', value: `₺${financials.platform_revenue_gigs?.toFixed(2)}`, color: '#10b981' },
+                    { label: 'Platform Geliri (Beat)', value: `₺${financials.platform_revenue_beats?.toFixed(2)}`, color: '#8b5cf6' },
+                    { label: 'Toplam GMV', value: `₺${financials.gmv?.toFixed(2)}`, color: '#f59e0b' },
+                    { label: 'Bekleyen Escrow', value: `₺${financials.pending_escrow?.toFixed(2)}`, color: '#ec4899' },
+                  ].map(s => (
+                    <div key={s.label} className="rs-card p-4">
+                      <p className="text-xl font-bold" style={{ color: s.color }}>{s.value}</p>
+                      <p className="text-xs text-[#a1a1aa] mt-1">{s.label}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  {[
+                    { label: 'Tamamlanan Sipariş', value: financials.order_count, color: '#10b981' },
+                    { label: 'Beat Satışı', value: financials.beat_purchase_count, color: '#8b5cf6' },
+                    { label: 'Aktif İtiraz', value: financials.active_disputes, color: '#ec4899' },
+                    { label: 'İtirazlı Tutar', value: `₺${financials.disputed_value?.toFixed(2)}`, color: '#f59e0b' },
+                  ].map(s => (
+                    <div key={s.label} className="rs-card p-4">
+                      <p className="text-xl font-bold" style={{ color: s.color }}>{s.value}</p>
+                      <p className="text-xs text-[#a1a1aa] mt-1">{s.label}</p>
+                    </div>
+                  ))}
+                </div>
+                {/* Commission tiers */}
+                {financials.seller_tier_distribution?.length > 0 && (
+                  <div className="rs-card p-5">
+                    <p className="text-xs font-mono uppercase text-[#a1a1aa] mb-4">Satıcı Komisyon Dağılımı</p>
+                    <div className="flex gap-3 flex-wrap">
+                      {financials.seller_tier_distribution.map(t => (
+                        <div key={t.tier} className="flex items-center gap-2 px-3 py-2 bg-[#0d0d0f] rounded-md">
+                          <div className="w-2 h-2 rounded-full" style={{ background: t.tier.includes('Elite') ? '#ec4899' : t.tier.includes('Pro') ? '#8b5cf6' : '#a1a1aa' }} />
+                          <p className="text-xs text-white">{t.tier}: <strong>{t.count}</strong></p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {/* Recent transactions */}
+                <div className="rs-card overflow-hidden">
+                  <div className="px-4 py-3 border-b border-white/5">
+                    <p className="text-xs font-mono uppercase text-[#a1a1aa]">Son İşlemler</p>
+                  </div>
+                  <div className="divide-y divide-white/5">
+                    {(financials.recent_transactions || []).map((tx, i) => (
+                      <div key={i} className="flex items-center gap-4 px-4 py-3 text-xs">
+                        <span className="text-[#a1a1aa] font-mono">{tx.transaction_id || 'TXN'}</span>
+                        <span className="text-white flex-1">{tx.order_id?.slice(-8)}</span>
+                        <span className="text-[#ec4899]">-₺{tx.platform_fee?.toFixed(2)}</span>
+                        <span className="text-[#10b981]">₺{tx.seller_amount?.toFixed(2)}</span>
+                      </div>
+                    ))}
+                    {!financials.recent_transactions?.length && <div className="text-center py-6 text-[#a1a1aa] text-sm">Henüz işlem yok.</div>}
+                  </div>
+                </div>
               </div>
             )}
           </>

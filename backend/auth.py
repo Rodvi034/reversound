@@ -215,6 +215,16 @@ async def complete_onboarding(body: OnboardingRequest, request: Request):
     )
     return {"message": "Onboarding complete", "goal": body.goal}
 
+@auth_router.get("/commission-tier")
+async def my_commission_tier(request: Request):
+    """Get current seller's commission tier and progress."""
+    user = await get_current_user(request)
+    from commission_service import get_tier_progress
+    db = get_db()
+    user_doc = await db.users.find_one({"_id": ObjectId(user["id"])}, {"lifetime_gig_sales": 1})
+    lifetime_sales = user_doc.get("lifetime_gig_sales", 0) if user_doc else 0
+    return get_tier_progress(lifetime_sales)
+
 @auth_router.patch("/profile")
 async def update_profile(body: ProfileUpdateRequest, request: Request):
     user = await get_current_user(request)

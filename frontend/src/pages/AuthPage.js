@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { Eye, EyeOff, Music2, Loader } from 'lucide-react';
+import { Eye, EyeOff, Loader } from 'lucide-react';
+import Logo from '@/components/Logo';
 
 const ROLES = [
   { value: 'buyer', label: 'Beat Alıcı', desc: 'Beat satın al, gig kirala' },
@@ -44,9 +45,7 @@ const AuthPage = () => {
       navigate('/dashboard');
     } catch (err) {
       setError(formatError(err.response?.data?.detail) || 'Giriş yapılamadı');
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
   const handleRegister = async (e) => {
@@ -62,9 +61,7 @@ const AuthPage = () => {
       }
     } catch (err) {
       setError(formatError(err.response?.data?.detail) || 'Kayıt olunamadı');
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
   return (
@@ -72,10 +69,8 @@ const AuthPage = () => {
       <div className="w-full max-w-md animate-fade-up">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 mb-4">
-            <div className="w-10 h-10 rounded-lg bg-[#8b5cf6] flex items-center justify-center glow-purple">
-              <Music2 size={20} className="text-white" />
-            </div>
+          <div className="flex items-center justify-center mb-4">
+            <Logo size="xl" showText={false} glow />
           </div>
           <h1 className="font-heading font-bold text-2xl text-white">REVERSOUND</h1>
           <p className="text-[#a1a1aa] text-sm mt-1">Müzik kariyerinin merkezi</p>
@@ -111,9 +106,7 @@ const AuthPage = () => {
               <div>
                 <label className="block text-xs font-mono uppercase text-[#a1a1aa] mb-1.5">E-posta</label>
                 <input
-                  type="email"
-                  required
-                  className="rs-input"
+                  type="email" required className="rs-input"
                   value={loginForm.email}
                   onChange={e => setLoginForm(f => ({ ...f, email: e.target.value }))}
                   placeholder="ornek@email.com"
@@ -124,9 +117,7 @@ const AuthPage = () => {
                 <label className="block text-xs font-mono uppercase text-[#a1a1aa] mb-1.5">Şifre</label>
                 <div className="relative">
                   <input
-                    type={showPw ? 'text' : 'password'}
-                    required
-                    className="rs-input pr-10"
+                    type={showPw ? 'text' : 'password'} required className="rs-input pr-10"
                     value={loginForm.password}
                     onChange={e => setLoginForm(f => ({ ...f, password: e.target.value }))}
                     placeholder="••••••••"
@@ -138,8 +129,7 @@ const AuthPage = () => {
                 </div>
               </div>
               <button
-                type="submit"
-                disabled={loading}
+                type="submit" disabled={loading}
                 className="w-full bg-[#8b5cf6] hover:bg-[#7c3aed] disabled:opacity-50 text-white font-semibold py-2.5 rounded-md transition-all hover:shadow-glow flex items-center justify-center gap-2 mt-2"
                 data-testid="login-submit-btn"
               >
@@ -155,9 +145,7 @@ const AuthPage = () => {
                 <div>
                   <label className="block text-xs font-mono uppercase text-[#a1a1aa] mb-1.5">Ad Soyad</label>
                   <input
-                    type="text"
-                    required
-                    className="rs-input"
+                    type="text" required className="rs-input"
                     value={regForm.name}
                     onChange={e => setRegForm(f => ({ ...f, name: e.target.value }))}
                     placeholder="Adın Soyadın"
@@ -167,9 +155,7 @@ const AuthPage = () => {
                 <div>
                   <label className="block text-xs font-mono uppercase text-[#a1a1aa] mb-1.5">Kullanıcı Adı</label>
                   <input
-                    type="text"
-                    required
-                    className="rs-input"
+                    type="text" required className="rs-input"
                     value={regForm.username}
                     onChange={e => setRegForm(f => ({ ...f, username: e.target.value.toLowerCase().replace(/\s/g, '') }))}
                     placeholder="kullanici_adi"
@@ -180,9 +166,7 @@ const AuthPage = () => {
               <div>
                 <label className="block text-xs font-mono uppercase text-[#a1a1aa] mb-1.5">E-posta</label>
                 <input
-                  type="email"
-                  required
-                  className="rs-input"
+                  type="email" required className="rs-input"
                   value={regForm.email}
                   onChange={e => setRegForm(f => ({ ...f, email: e.target.value }))}
                   placeholder="ornek@email.com"
@@ -193,10 +177,7 @@ const AuthPage = () => {
                 <label className="block text-xs font-mono uppercase text-[#a1a1aa] mb-1.5">Şifre</label>
                 <div className="relative">
                   <input
-                    type={showPw ? 'text' : 'password'}
-                    required
-                    minLength={6}
-                    className="rs-input pr-10"
+                    type={showPw ? 'text' : 'password'} required minLength={6} className="rs-input pr-10"
                     value={regForm.password}
                     onChange={e => setRegForm(f => ({ ...f, password: e.target.value }))}
                     placeholder="En az 6 karakter"
@@ -212,30 +193,22 @@ const AuthPage = () => {
                 <div className="grid grid-cols-1 gap-1.5">
                   {ROLES.map(r => (
                     <button
-                      key={r.value}
-                      type="button"
+                      key={r.value} type="button"
                       onClick={() => setRegForm(f => ({ ...f, role: r.value }))}
-                      className={`flex items-center gap-3 px-3 py-2 rounded-md border text-left transition-all ${
-                        regForm.role === r.value
-                          ? 'border-[#8b5cf6] bg-[#8b5cf6]/10 text-white'
-                          : 'border-white/5 bg-[#0d0d0f] text-[#a1a1aa] hover:border-white/10'
-                      }`}
+                      className={`flex items-center gap-3 px-3 py-2 rounded-md border text-left transition-all ${regForm.role === r.value ? 'border-[#8b5cf6] bg-[#8b5cf6]/10 text-white' : 'border-white/5 bg-[#0d0d0f] text-[#a1a1aa] hover:border-white/10'}`}
                       data-testid={`role-${r.value}`}
                     >
                       <div className="flex-1">
                         <p className="text-sm font-medium">{r.label}</p>
                         <p className="text-xs opacity-70">{r.desc}</p>
                       </div>
-                      {regForm.role === r.value && (
-                        <div className="w-4 h-4 rounded-full bg-[#8b5cf6] flex-shrink-0" />
-                      )}
+                      {regForm.role === r.value && <div className="w-4 h-4 rounded-full bg-[#8b5cf6] flex-shrink-0" />}
                     </button>
                   ))}
                 </div>
               </div>
               <button
-                type="submit"
-                disabled={loading}
+                type="submit" disabled={loading}
                 className="w-full bg-[#8b5cf6] hover:bg-[#7c3aed] disabled:opacity-50 text-white font-semibold py-2.5 rounded-md transition-all hover:shadow-glow flex items-center justify-center gap-2 mt-2"
                 data-testid="register-submit-btn"
               >

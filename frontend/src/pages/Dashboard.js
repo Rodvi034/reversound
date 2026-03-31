@@ -5,6 +5,8 @@ import { Music2, Briefcase, Wallet, TrendingUp, Play, Upload, Plus, ArrowRight, 
 import axios from 'axios';
 import Layout from '@/components/Layout';
 
+import CommissionTier from '@/components/CommissionTier';
+
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const StatCard = ({ icon: Icon, label, value, color, sub }) => (
@@ -88,6 +90,9 @@ const Dashboard = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Commission Tier for sellers */}
+          <CommissionTier />
+
           {/* Quick actions */}
           <div className="space-y-4">
             <h2 className="text-sm font-semibold text-white font-mono uppercase tracking-wider">Hızlı İşlemler</h2>

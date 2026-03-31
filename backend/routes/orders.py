@@ -240,8 +240,14 @@ async def approve_order(order_id: str, request: Request):
         raise HTTPException(400, f"Cannot approve order in status: {order['status']}")
 
     price = order["price"]
-    platform_fee = price * 0.1  # 10% platform fee
-    seller_amount = price - platform_fee
+
+    # Dynamic commission based on seller's lifetime sales
+    from commission_service import get_seller_lifetime_sales, get_commission_fee, get_tier, increment_lifetime_sales
+    lifetime_sales = await get_seller_lifetime_sales(db, order["seller_id"])
+    fee_rate = get_commission_fee(lifetime_sales)
+    tier = get_tier(lifetime_sales)
+    platform_fee = round(price * fee_rate, 2)
+    seller_amount = round(price - platform_fee, 2)
 
     # ESCROW RELEASE: Move from buyer escrow -> seller wallet
     await db.users.update_one(
@@ -262,14 +268,28 @@ async def approve_order(order_id: str, request: Request):
         }}
     )
     await db.escrow_transactions.update_one({"order_id": order_id}, {"$set": {"status": "released"}})
-    # Notify seller
+    # Increment lifetime sales counter for commission tracking
     try:
-        import notification_service as ns
-        order = await db.orders.find_one({"_id": ObjectId(order_id)})
-        await ns.notify_order_event(db, order, "completed")
+        await increment_lifetime_sales(db, order["seller_id"])
     except Exception:
         pass
-    return {"message": "Order completed. Payment released to seller.", "seller_credited": seller_amount}
+    # Notify + email
+    try:
+        import notification_service as ns
+        order_updated = await db.orders.find_one({"_id": ObjectId(order_id)})
+        await ns.notify_order_event(db, order_updated, "completed")
+        # Send escrow released email
+        import email_service as es
+        seller_doc = await db.users.find_one({"_id": ObjectId(order["seller_id"])}, {"email": 1, "name": 1})
+        if seller_doc:
+            await es.send_escrow_released(
+                seller_doc.get("email", ""), seller_doc.get("name", ""),
+                order.get("gig_title", ""), price, seller_amount, platform_fee,
+                fee_rate, tier["name"], order_id, db
+            )
+    except Exception:
+        pass
+    return {"message": "Order completed. Payment released to seller.", "seller_credited": seller_amount, "platform_fee": platform_fee, "commission_tier": tier["name"], "fee_rate": fee_rate}
 
 @orders_router.post("/{order_id}/dispute")
 async def dispute_order(order_id: str, body: DisputeRequest, request: Request):
