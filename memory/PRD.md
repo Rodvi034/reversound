@@ -13,7 +13,18 @@ ReverSound — Music Career Ecosystem & Freelance Marketplace
 - **AI:** Gemini 3.1 Pro Preview via emergentintegrations (EMERGENT_LLM_KEY)
 - **Escrow:** Mock escrow system (Iyzico/PayTR ready architecture)
 
-## Implemented Features (v6.0 — Sprint 6 — 2026-03-31)
+## Implemented Features (v7.0 — Sprint 7 — 2026-03-31)
+
+### Sprint 7 Additions (Pre-Launch Polish)
+- [x] **Professional Beat Purchase Flow** — BuyModal removed. All beat purchases now go through `LicenseModal` (3-tier comparison: Basic Lease / Premium Lease / Exclusive Rights) → `CartContext.addItem()` → `CartDrawer` → `/checkout`. Clear feature matrix, legal rights info, micro-animations
+- [x] **Centralized Checkout Page** — `/checkout` processes beats (via `/api/beats/{id}/purchase`), subscriptions, and Rever Studio plans from a unified order summary with wallet balance display and insufficient balance warning + topup CTA
+- [x] **Universal Favorites** — Heart buttons on ALL beat surfaces: BeatMarketplace rows (hover-reveal), GlobalPlayer (persistent), LicenseModal header. Connected to `FavoritesContext` with animated toggle
+- [x] **GlobalPlayer Upgrade** — Heart toggle + "Satın Al" button (opens LicenseModal) added to sticky player; LicenseModal shown for currently playing beat
+- [x] **Dead Links Eliminated** — `/blog/{id}` (BlogPostDetail), `/blog/create` (CreateBlogPost with UpsellModal gate), `/jobs/{id}` (JobRequestDetail), `/checkout` all fully built
+- [x] **Job Proposal Comparison View** — `/jobs/{id}` shows job brief + proposals in side-by-side grid: price, delivery, seller avatar, portfolio link, "Onayla & Escrow Oluştur" one-click accept
+- [x] **Rever Studio Billing** — `POST /api/studio/subscribe?tier=studio_X` deducts wallet balance, sets `user.studio_tier`, creates 30-day subscription record. GET /api/studio/plans + GET /api/studio/my
+- [x] **Logo Sizing** — Logo upgraded from `size="md"` to `size="lg"` in Navbar; Auth page uses `size="xl"` with glow effect; TEXT_SIZES map added to Logo component
+- [x] **URL Params in BeatMarketplace** — `/beats?genre=Trap` initializes genre filter, `/beats?type=pack` initializes item type filter on page load
 
 ### Sprint 6 Additions
 - [x] **BeatStars-Inspired Navbar** — Grouped "Keşfet" dropdown (7 items), "Oluştur" dropdown (role-filtered), search bar with category selector, Cart badge icon, notification bell, theme/lang toggles, "Start Selling" CTA
