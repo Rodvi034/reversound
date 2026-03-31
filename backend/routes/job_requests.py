@@ -109,6 +109,72 @@ async def submit_proposal(request_id: str, body: ProposalCreate, request: Reques
     await db.job_requests.update_one({"_id": ObjectId(request_id)}, {"$inc": {"proposals_count": 1}})
     return doc_to_dict(proposal_doc)
 
+@job_requests_router.post("/{request_id}/proposals/{proposal_id}/accept")
+async def accept_proposal(request_id: str, proposal_id: str, request: Request):
+    """Buyer accepts a proposal → creates an escrow order."""
+    user = await get_current_user(request)
+    db = get_db()
+
+    job = await db.job_requests.find_one({"_id": ObjectId(request_id)})
+    if not job:
+        raise HTTPException(404, "Job request not found")
+    if job["buyer_id"] != user["id"]:
+        raise HTTPException(403, "Only the buyer can accept proposals")
+    if job["status"] != "open":
+        raise HTTPException(400, "Job request is not open")
+
+    proposal = await db.proposals.find_one({"_id": ObjectId(proposal_id), "job_request_id": request_id})
+    if not proposal:
+        raise HTTPException(404, "Proposal not found")
+    if proposal["status"] != "pending":
+        raise HTTPException(400, f"Proposal is already {proposal['status']}")
+
+    price = proposal["price"]
+    buyer_doc = await db.users.find_one({"_id": ObjectId(user["id"])})
+    if buyer_doc.get("wallet_balance", 0) < price:
+        raise HTTPException(400, f"Insufficient balance. Need ₺{price:.2f}, have ₺{buyer_doc.get('wallet_balance', 0):.2f}")
+
+    seller_doc = await db.users.find_one({"_id": ObjectId(proposal["seller_id"])})
+    seller_name = seller_doc.get("name", "") if seller_doc else ""
+
+    # Deduct escrow
+    await db.users.update_one({"_id": ObjectId(user["id"])}, {"$inc": {"wallet_balance": -price, "escrow_balance": price}})
+
+    from datetime import timedelta
+    due_date = datetime.now(timezone.utc) + timedelta(days=proposal["delivery_days"])
+    order_doc = {
+        "buyer_id": user["id"],
+        "buyer_name": buyer_doc.get("name", ""),
+        "seller_id": proposal["seller_id"],
+        "seller_name": seller_name,
+        "gig_id": proposal.get("gig_id"),
+        "gig_title": f"İş Talebi: {job['title'][:50]}",
+        "tier": "custom",
+        "tier_description": proposal["message"][:100],
+        "price": price,
+        "delivery_days": proposal["delivery_days"],
+        "revisions": 1,
+        "requirements": job.get("description", ""),
+        "status": "funded",
+        "escrow_status": "held",
+        "due_date": due_date,
+        "revisions_used": 0,
+        "attachments": [],
+        "created_at": datetime.now(timezone.utc)
+    }
+    result = await db.orders.insert_one(order_doc)
+    order_id = str(result.inserted_id)
+
+    # Update proposal and job status
+    await db.proposals.update_one({"_id": ObjectId(proposal_id)}, {"$set": {"status": "accepted"}})
+    await db.proposals.update_many(
+        {"job_request_id": request_id, "_id": {"$ne": ObjectId(proposal_id)}},
+        {"$set": {"status": "declined"}}
+    )
+    await db.job_requests.update_one({"_id": ObjectId(request_id)}, {"$set": {"status": "closed"}})
+
+    return {"message": "Teklif kabul edildi. Escrow oluşturuldu.", "order_id": order_id}
+
 @job_requests_router.patch("/{request_id}/close")
 async def close_job_request(request_id: str, request: Request):
     user = await get_current_user(request)

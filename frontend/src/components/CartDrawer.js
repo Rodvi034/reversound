@@ -1,60 +1,18 @@
-import React, { useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import React from 'react';
 import { useCart } from '@/contexts/CartContext';
 import { useNavigate } from 'react-router-dom';
-import { X, ShoppingBag, Trash2, Loader, Check, Package } from 'lucide-react';
-import axios from 'axios';
-
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+import { X, ShoppingBag, Trash2, Package, Music2 } from 'lucide-react';
 
 const CartDrawer = () => {
   const { items, isOpen, setIsOpen, removeItem, clearCart, total } = useCart();
-  const { user, token } = useAuth();
   const navigate = useNavigate();
-  const [checkoutLoading, setCheckoutLoading] = useState(false);
-  const [checkoutMsg, setCheckoutMsg] = useState('');
-
-  const handleCheckout = async () => {
-    if (!user) { navigate('/auth'); return; }
-    setCheckoutLoading(true);
-    setCheckoutMsg('');
-    let successCount = 0;
-    let failMessages = [];
-
-    for (const item of items) {
-      if (item.type === 'beat') {
-        try {
-          await axios.post(
-            `${API}/beats/${item.id}/purchase?license_type=${item.license_type}`,
-            {},
-            { headers: { Authorization: `Bearer ${token}` }, withCredentials: true }
-          );
-          successCount++;
-        } catch (err) {
-          failMessages.push(`${item.title}: ${err.response?.data?.detail || 'Hata'}`);
-        }
-      }
-    }
-    setCheckoutLoading(false);
-    if (successCount > 0) {
-      clearCart();
-      setCheckoutMsg(`${successCount} beat başarıyla satın alındı!`);
-      setTimeout(() => { setCheckoutMsg(''); setIsOpen(false); }, 3000);
-    }
-    if (failMessages.length > 0) {
-      setCheckoutMsg(failMessages.join('\n'));
-    }
-  };
 
   if (!isOpen) return null;
 
   return (
     <>
       {/* Backdrop */}
-      <div
-        className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
-        onClick={() => setIsOpen(false)}
-      />
+      <div className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm" onClick={() => setIsOpen(false)} />
       {/* Drawer */}
       <div
         className="fixed right-0 top-0 h-full z-50 w-full max-w-sm bg-[#141416] border-l border-white/10 flex flex-col shadow-2xl"
@@ -97,7 +55,7 @@ const CartDrawer = () => {
                   <p className="text-sm font-medium text-white truncate">{item.title}</p>
                   <p className="text-xs text-[#a1a1aa]">{item.producer_name || ''}</p>
                   {item.license_type && (
-                    <span className="badge-genre text-[10px] capitalize">{item.license_type}</span>
+                    <span className="badge-genre text-[10px] capitalize mt-0.5 inline-block">{item.license_type} lisans</span>
                   )}
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
@@ -114,22 +72,16 @@ const CartDrawer = () => {
         {/* Footer */}
         {items.length > 0 && (
           <div className="p-5 border-t border-white/5 space-y-3">
-            {checkoutMsg && (
-              <div className={`p-3 rounded-md text-xs ${checkoutMsg.includes('başarı') ? 'bg-[#10b981]/10 text-[#10b981] border border-[#10b981]/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
-                {checkoutMsg}
-              </div>
-            )}
             <div className="flex items-center justify-between">
               <span className="text-sm text-[#a1a1aa]">Toplam</span>
               <span className="text-xl font-bold text-white">₺{total.toFixed(2)}</span>
             </div>
             <button
-              onClick={handleCheckout}
-              disabled={checkoutLoading}
-              className="w-full bg-[#8b5cf6] hover:bg-[#7c3aed] disabled:opacity-50 text-white font-semibold py-3 rounded-md transition-all hover:shadow-glow flex items-center justify-center gap-2"
+              onClick={() => { setIsOpen(false); navigate('/checkout'); }}
+              className="w-full bg-[#8b5cf6] hover:bg-[#7c3aed] text-white font-semibold py-3 rounded-md transition-all hover:shadow-glow flex items-center justify-center gap-2"
               data-testid="checkout-btn"
             >
-              {checkoutLoading ? <Loader size={16} className="animate-spin" /> : <><ShoppingBag size={16} /> Cüzdandan Öde</>}
+              <ShoppingBag size={16} /> Ödeme Sayfasına Git
             </button>
             <button onClick={clearCart} className="w-full text-xs text-[#a1a1aa] hover:text-[#ec4899] transition-colors py-1">
               Sepeti Temizle

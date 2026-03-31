@@ -62,8 +62,8 @@ const Navbar = () => {
       <nav className="sticky top-0 z-50 border-b border-white/5 bg-[#0d0d0f]/95 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 h-14 flex items-center gap-3">
           {/* Logo — bigger brand identifier */}
-          <Link to="/" className="flex-shrink-0" data-testid="nav-logo">
-            <Logo size="md" showText textSize="sm" glow />
+          <Link to="/" className="flex-shrink-0 mr-1" data-testid="nav-logo">
+            <Logo size="lg" showText textSize="md" glow />
           </Link>
 
           {/* Explore dropdown */}

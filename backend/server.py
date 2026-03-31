@@ -34,6 +34,7 @@ from routes.financials import financials_router
 from routes.favorites import favorites_router
 from routes.job_requests import job_requests_router
 from routes.blog import blog_router
+from routes.rever_studio import studio_router
 from seed_data import seed_demo_data
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s %(levelname)s %(message)s')
@@ -95,7 +96,7 @@ for router in [
     playlists_router, support_router, liveroom_http_router,
     analytics_router, payment_router, notifications_router,
     profiles_router, financials_router, favorites_router,
-    job_requests_router, blog_router,
+    job_requests_router, blog_router, studio_router,
 ]:
     app.include_router(router, prefix="/api")
 

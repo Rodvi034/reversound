@@ -35,9 +35,13 @@ import PackDetail from '@/pages/PackDetail';
 import PublicProfile from '@/pages/PublicProfile';
 import FavoritesPage from '@/pages/FavoritesPage';
 import JobBoard from '@/pages/JobBoard';
+import JobRequestDetail from '@/pages/JobRequestDetail';
 import BlogPage from '@/pages/BlogPage';
+import BlogPostDetail from '@/pages/BlogPostDetail';
+import CreateBlogPost from '@/pages/CreateBlogPost';
 import ReverStudio from '@/pages/ReverStudio';
 import MyRoadmap from '@/pages/MyRoadmap';
+import CheckoutPage from '@/pages/CheckoutPage';
 
 function App() {
   return (
@@ -60,10 +64,13 @@ function App() {
                       <Route path="/feed" element={<StudioFeed />} />
                       <Route path="/playlists" element={<PlaylistPage />} />
                       <Route path="/blog" element={<BlogPage />} />
+                      <Route path="/blog/:id" element={<BlogPostDetail />} />
                       <Route path="/studio" element={<ReverStudio />} />
                       <Route path="/packs/:id" element={<PackDetail />} />
                       <Route path="/u/:username" element={<PublicProfile />} />
                       <Route path="/jobs" element={<JobBoard />} />
+                      <Route path="/jobs/:id" element={<JobRequestDetail />} />
+                      <Route path="/checkout" element={<CheckoutPage />} />
 
                       {/* Protected */}
                       <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
@@ -82,6 +89,7 @@ function App() {
                       <Route path="/liveroom/:roomId" element={<ProtectedRoute><LiveRoom /></ProtectedRoute>} />
                       <Route path="/analytics" element={<ProtectedRoute><AnalyticsDashboard /></ProtectedRoute>} />
                       <Route path="/favorites" element={<ProtectedRoute><FavoritesPage /></ProtectedRoute>} />
+                      <Route path="/blog/create" element={<ProtectedRoute><CreateBlogPost /></ProtectedRoute>} />
 
                       {/* Admin only */}
                       <Route path="/admin" element={<ProtectedRoute adminOnly><AdminPortal /></ProtectedRoute>} />

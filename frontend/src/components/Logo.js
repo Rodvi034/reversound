@@ -3,6 +3,7 @@ import React from 'react';
 const LOGO_URL = "https://customer-assets.emergentagent.com/job_freelance-beats-test/artifacts/reddx9n4_Gemini_Generated_Image_7ia35j7ia35j7ia3.png";
 
 const SIZES = { xs: 20, sm: 28, md: 36, lg: 48, xl: 64, '2xl': 96 };
+const TEXT_SIZES = { sm: 14, md: 16, lg: 20, xl: 26, '2xl': 32 };
 
 const Logo = ({
   size = 'md',
@@ -30,7 +31,7 @@ const Logo = ({
       {showText && (
         <span
           className={`font-heading font-bold tracking-tight text-white ${textClassName}`}
-          style={{ fontSize: textSize === 'sm' ? 14 : textSize === 'lg' ? 20 : textSize === 'xl' ? 28 : 14 }}
+          style={{ fontSize: TEXT_SIZES[textSize] || TEXT_SIZES.md }}
         >
           REVERSOUND
         </span>
