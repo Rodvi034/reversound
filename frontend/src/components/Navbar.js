@@ -6,7 +6,7 @@ import { useI18n } from '@/contexts/i18nContext';
 import { useCart } from '@/contexts/CartContext';
 import {
   Music2, Search, ChevronDown, LogOut, LayoutDashboard, ShieldCheck,
-  Wallet, Plus, Sun, Moon, Globe, Briefcase, Package, Radio, ListMusic,
+  Wallet, Plus, Globe, Briefcase, Package, Radio, ListMusic,
   Users, BookOpen, Upload, Video, TrendingUp, LifeBuoy, Crown, ShoppingBag
 } from 'lucide-react';
 import {
@@ -159,10 +159,7 @@ const Navbar = () => {
 
           {/* Right section */}
           <div className="ml-auto flex items-center gap-1.5">
-            {/* Theme + Language */}
-            <button onClick={toggleTheme} className="p-1.5 rounded-md text-[#a1a1aa] hover:text-white hover:bg-white/5 transition-colors" data-testid="theme-toggle-btn">
-              {isDark ? <Sun size={16} /> : <Moon size={16} />}
-            </button>
+            {/* Language toggle only — Dark mode is permanent */}
             <button onClick={toggleLocale} className="px-2 py-1 rounded-md text-[#a1a1aa] hover:text-white hover:bg-white/5 text-xs font-mono transition-colors" data-testid="lang-toggle-btn">
               <Globe size={13} className="inline mr-1" />{locale}
             </button>

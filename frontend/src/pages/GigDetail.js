@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { Star, Clock, RefreshCw, Check, ShoppingCart, MessageSquare, Loader, ChevronLeft } from 'lucide-react';
+import { Star, Clock, RefreshCw, Check, ShoppingCart, MessageSquare, Loader, ChevronLeft, Play, Image, Video } from 'lucide-react';
 import axios from 'axios';
 import Layout from '@/components/Layout';
 
@@ -87,14 +87,47 @@ const GigDetail = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left: Gig Info */}
           <div className="lg:col-span-2 space-y-5">
-            {/* Cover */}
-            <div className="rounded-md overflow-hidden h-64">
-              {gig.cover_url ? (
-                <img src={gig.cover_url} alt={gig.title} className="w-full h-full object-cover" />
+            {/* Cover or Video Preview */}
+            <div className="rounded-md overflow-hidden">
+              {gig.preview_video_url ? (
+                <div className="aspect-video bg-black rounded-md overflow-hidden">
+                  {gig.preview_video_url.includes('youtube.com') || gig.preview_video_url.includes('youtu.be') ? (
+                    <iframe
+                      src={gig.preview_video_url.replace('watch?v=', 'embed/')}
+                      className="w-full h-full"
+                      allowFullScreen
+                      title="Preview Video"
+                    />
+                  ) : (
+                    <video src={gig.preview_video_url} controls className="w-full h-full object-cover" />
+                  )}
+                </div>
+              ) : gig.cover_url ? (
+                <div className="h-64">
+                  <img src={gig.cover_url} alt={gig.title} className="w-full h-full object-cover" />
+                </div>
               ) : (
-                <div className="w-full h-full bg-[#141416] flex items-center justify-center text-[#a1a1aa]">Görsel yok</div>
+                <div className="h-64 bg-[#141416] flex items-center justify-center text-[#a1a1aa]">Görsel yok</div>
               )}
             </div>
+
+            {/* Portfolio Gallery */}
+            {gig.portfolio_images?.length > 0 && (
+              <div className="rs-card p-5">
+                <div className="flex items-center gap-2 mb-3">
+                  <Image size={14} className="text-[#8b5cf6]" />
+                  <h3 className="text-sm font-semibold text-white">Portfolio</h3>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {gig.portfolio_images.map((imgUrl, idx) => (
+                    <a key={idx} href={imgUrl} target="_blank" rel="noreferrer"
+                      className="aspect-video rounded-md overflow-hidden border border-white/10 hover:border-[#8b5cf6]/40 transition-colors">
+                      <img src={imgUrl} alt={`Portfolio ${idx + 1}`} className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Category + Title */}
             <div>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { Clock, CheckCircle, AlertTriangle, XCircle, Shield, Loader, Package } from 'lucide-react';
+import { Clock, CheckCircle, AlertTriangle, XCircle, Shield, Loader, Package, FileText, Receipt } from 'lucide-react';
 import axios from 'axios';
 import Layout from '@/components/Layout';
 
@@ -91,6 +91,21 @@ const OrderCard = ({ order, userId, onAction }) => {
 
       {/* Action buttons */}
       <div className="flex flex-wrap gap-2">
+        {/* PDF Downloads for completed orders */}
+        {order.status === 'completed' && (
+          <>
+            <a href={`${process.env.REACT_APP_BACKEND_URL}/api/orders/${order.id}/contract`} target="_blank" rel="noreferrer"
+              className="flex items-center gap-1.5 text-xs text-[#8b5cf6] border border-[#8b5cf6]/20 px-3 py-2 rounded-md hover:bg-[#8b5cf6]/10 transition-all"
+              data-testid={`contract-${order.id}`}>
+              <FileText size={12} /> Lisans Belgesi
+            </a>
+            <a href={`${process.env.REACT_APP_BACKEND_URL}/api/orders/${order.id}/invoice`} target="_blank" rel="noreferrer"
+              className="flex items-center gap-1.5 text-xs text-[#10b981] border border-[#10b981]/20 px-3 py-2 rounded-md hover:bg-[#10b981]/10 transition-all"
+              data-testid={`invoice-${order.id}`}>
+              <Receipt size={12} /> Fatura
+            </a>
+          </>
+        )}
         {/* Seller actions */}
         {isSeller && order.status === 'funded' && (
           <DeliverModal orderId={order.id} token={token} onSuccess={onAction} />

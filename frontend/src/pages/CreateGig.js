@@ -20,7 +20,8 @@ const CreateGig = () => {
 
   const [form, setForm] = useState({
     title: '', description: '', category: CATEGORIES[0],
-    cover_url: '', tags: [],
+    cover_url: '', tags: [], preview_video_url: '',
+    portfolio_images: [],
   });
   const [tiers, setTiers] = useState(DEFAULT_TIERS);
   const [tagInput, setTagInput] = useState('');
@@ -100,6 +101,12 @@ const CreateGig = () => {
               <label className="block text-xs font-mono uppercase text-[#a1a1aa] mb-1.5">Kapak Görseli URL</label>
               <input type="url" value={form.cover_url} onChange={e => setForm(f => ({ ...f, cover_url: e.target.value }))}
                 placeholder="https://..." className="rs-input" data-testid="gig-cover-url" />
+            </div>
+            <div>
+              <label className="block text-xs font-mono uppercase text-[#a1a1aa] mb-1.5">Video Önizleme URL (YouTube / MP4)</label>
+              <input type="url" value={form.preview_video_url || ''} onChange={e => setForm(f => ({ ...f, preview_video_url: e.target.value }))}
+                placeholder="https://youtube.com/watch?v=..." className="rs-input" />
+              <p className="text-[10px] text-[#a1a1aa] mt-1">YouTube veya doğrudan MP4 URL. Alıcılar çalışmana önizleme yapabilir.</p>
             </div>
             {/* Tags */}
             <div>

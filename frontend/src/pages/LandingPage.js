@@ -81,16 +81,25 @@ const LandingPage = () => {
   const [featuredGigs, setFeaturedGigs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [heroSearch, setHeroSearch] = useState('');
+  const [cmsContent, setCmsContent] = useState(null);
 
   useEffect(() => {
     Promise.all([
       axios.get(`${API}/beats?limit=8`),
-      axios.get(`${API}/gigs?limit=4`)
-    ]).then(([beatsRes, gigsRes]) => {
+      axios.get(`${API}/gigs?limit=4`),
+      axios.get(`${API}/cms`),
+    ]).then(([beatsRes, gigsRes, cmsRes]) => {
       setFeaturedBeats(beatsRes.data.beats || []);
       setFeaturedGigs(gigsRes.data.gigs || []);
+      setCmsContent(cmsRes.data);
     }).catch(() => {}).finally(() => setLoading(false));
   }, []);
+
+  const hero = cmsContent?.hero || {};
+  const stats = cmsContent?.stats || {};
+  const genres = cmsContent?.genres || GENRES_DATA;
+  const testimonials = cmsContent?.testimonials || TESTIMONIALS;
+  const announcement = cmsContent?.announcement;
 
   const handleAddToCart = (beat) => {
     addItem({
@@ -107,6 +116,15 @@ const LandingPage = () => {
 
   return (
     <div className="min-h-screen bg-[#0d0d0f]">
+      {/* Announcement Banner — CMS controlled */}
+      {announcement?.enabled && announcement?.text && (
+        <div className="w-full py-2 px-4 text-center text-sm font-medium text-white" style={{ background: announcement.color || '#8b5cf6' }}>
+          {announcement.text}
+          {announcement.link_url && (
+            <a href={announcement.link_url} className="ml-2 underline hover:no-underline">{announcement.link_text || 'Detaylar'}</a>
+          )}
+        </div>
+      )}
       {/* ── HERO: Full-screen with central search ─────────────────────────── */}
       <section className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden">
         <div className="absolute inset-0 bg-cover bg-center bg-fixed" style={{ backgroundImage: `url(${HERO_BG})` }} />
@@ -116,12 +134,13 @@ const LandingPage = () => {
         <div className="relative z-10 text-center px-4 max-w-3xl mx-auto w-full animate-fade-up">
           <div className="inline-flex items-center gap-2 bg-[#8b5cf6]/10 border border-[#8b5cf6]/20 rounded-full px-4 py-1.5 mb-8">
             <span className="w-2 h-2 rounded-full bg-[#10b981] animate-pulse" />
-            <span className="text-sm text-[#a1a1aa] font-mono uppercase tracking-wider">Türkiye'nin Müzik Platformu</span>
+            <span className="text-sm text-[#a1a1aa] font-mono uppercase tracking-wider">{hero.badge_text || "Türkiye'nin Müzik Platformu"}</span>
           </div>
 
           <h1 className="font-heading font-bold text-5xl sm:text-6xl lg:text-7xl text-white mb-6 leading-tight tracking-tighter">
-            İLK HİTİN<br />
-            <span className="text-[#8b5cf6] text-glow">BURADA BAŞLIYOR</span>
+            {(hero.title || "İLK HİTİN BURADA BAŞLIYOR").split('\n').map((line, i) => (
+              <React.Fragment key={i}>{line}<br /></React.Fragment>
+            ))}
           </h1>
 
           {/* BeatStars-style search bar */}
@@ -166,7 +185,7 @@ const LandingPage = () => {
       {/* ── STATS ─────────────────────────────────────────────────────────── */}
       <section className="border-y border-white/5 bg-[#141416]">
         <div className="max-w-5xl mx-auto px-4 py-8 grid grid-cols-2 md:grid-cols-4 gap-6">
-          {[{ v: '12K+', l: 'Beat' }, { v: '3.4K+', l: 'Prodüktör' }, { v: '850+', l: 'Freelancer' }, { v: '98%', l: 'Memnuniyet' }].map((s, i) => (
+          {[{ v: stats.beats || '12K+', l: 'Beat' }, { v: stats.producers || '3.4K+', l: 'Prodüktör' }, { v: stats.freelancers || '850+', l: 'Freelancer' }, { v: stats.satisfaction || '98%', l: 'Memnuniyet' }].map((s, i) => (
             <div key={i} className="text-center">
               <p className="font-heading text-2xl sm:text-3xl font-bold text-[#8b5cf6] text-glow">{s.v}</p>
               <p className="text-sm text-[#a1a1aa] mt-1">{s.l}</p>
@@ -250,7 +269,7 @@ const LandingPage = () => {
             <button onClick={() => navigate('/beats')} className="text-sm text-[#a1a1aa] hover:text-white transition-colors">Tümünü Gör</button>
           </div>
           <div className="flex gap-3 overflow-x-auto pb-2">
-            {GENRES_DATA.map((genre, i) => (
+            {genres.map((genre, i) => (
               <button
                 key={genre.name}
                 onClick={() => navigate(`/beats?genre=${genre.name}`)}
@@ -306,7 +325,7 @@ const LandingPage = () => {
           <h2 className="font-heading font-bold text-2xl text-white text-center mb-3">REVERSOUND NE KADAR İYİ?</h2>
           <p className="text-[#a1a1aa] text-center text-sm mb-10">Sadece bizden duymayın. Topluluğumuzdan duyun.</p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {TESTIMONIALS.map((t, i) => (
+            {testimonials.map((t, i) => (
               <div key={i} className="rs-card p-6 hover:border-white/15 transition-all">
                 <div className="h-28 bg-gradient-to-br from-[#8b5cf6]/15 to-[#141416] rounded-lg mb-4 flex items-center justify-center">
                   <div className="w-16 h-16 rounded-full bg-[#8b5cf6]/20 border-2 border-[#8b5cf6]/40 flex items-center justify-center text-2xl font-bold text-[#8b5cf6]">

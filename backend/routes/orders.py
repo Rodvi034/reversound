@@ -310,6 +310,95 @@ async def dispute_order(order_id: str, body: DisputeRequest, request: Request):
     )
     return {"message": "Dispute opened. Admin will review within 24 hours."}
 
+from fastapi.responses import Response as FastAPIResponse
+
+@orders_router.get("/{order_id}/contract")
+async def download_contract(order_id: str, request: Request):
+    """Generate and download the license agreement PDF for a beat purchase."""
+    user = await get_current_user(request)
+    db = get_db()
+    order = await db.orders.find_one({"_id": ObjectId(order_id)})
+    if not order:
+        raise HTTPException(404, "Order not found")
+    if order["buyer_id"] != user["id"] and order["seller_id"] != user["id"] and user["role"] != "admin":
+        raise HTTPException(403, "Not authorized")
+
+    # Get buyer + seller info
+    buyer = await db.users.find_one({"_id": ObjectId(order["buyer_id"])})
+    seller = await db.users.find_one({"_id": ObjectId(order["seller_id"])}) if order.get("seller_id") and order["seller_id"] != "demo" else None
+
+    # Find purchase record for beat orders
+    purchase = await db.purchases.find_one({"buyer_id": order["buyer_id"]}) if order.get("gig_id") is None else None
+
+    try:
+        from services.pdf_service import generate_license_contract
+        pdf_data = generate_license_contract({
+            "buyer_name": buyer.get("name", "") if buyer else order.get("buyer_name", ""),
+            "buyer_email": buyer.get("email", "") if buyer else "",
+            "producer_name": seller.get("name", "") if seller else order.get("seller_name", ""),
+            "producer_username": seller.get("username", "") if seller else "",
+            "beat_title": order.get("gig_title", "N/A"),
+            "genre": purchase.get("genre", "") if purchase else "",
+            "bpm": purchase.get("bpm", "") if purchase else "",
+            "key": purchase.get("key", "") if purchase else "",
+            "license_type": order.get("tier", "basic"),
+            "price": order.get("price", 0),
+            "rights": order.get("tier_description", ""),
+            "purchase_id": order_id[-8:].upper(),
+            "purchased_at": order.get("created_at", datetime.now(timezone.utc)).isoformat() if hasattr(order.get("created_at"), "isoformat") else str(order.get("created_at", "")),
+        })
+        filename = f"ReverSound_Contract_{order_id[-8:].upper()}.pdf"
+        return FastAPIResponse(
+            content=pdf_data,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+        )
+    except Exception as e:
+        raise HTTPException(500, f"PDF generation failed: {str(e)}")
+
+
+@orders_router.get("/{order_id}/invoice")
+async def download_invoice(order_id: str, request: Request):
+    """Generate and download invoice PDF."""
+    user = await get_current_user(request)
+    db = get_db()
+    order = await db.orders.find_one({"_id": ObjectId(order_id)})
+    if not order:
+        raise HTTPException(404, "Order not found")
+    if order["buyer_id"] != user["id"] and order["seller_id"] != user["id"] and user["role"] != "admin":
+        raise HTTPException(403, "Not authorized")
+
+    buyer = await db.users.find_one({"_id": ObjectId(order["buyer_id"])})
+    seller_name = order.get("seller_name", "N/A")
+
+    try:
+        from services.pdf_service import generate_invoice
+        import uuid
+        price = order.get("price", 0)
+        fee = round(price * 0.1, 2)
+        net = round(price - fee, 2)
+        pdf_data = generate_invoice({
+            "invoice_number": f"INV-{order_id[-8:].upper()}",
+            "buyer_name": buyer.get("name", "") if buyer else order.get("buyer_name", ""),
+            "buyer_email": buyer.get("email", "") if buyer else "",
+            "seller_name": seller_name,
+            "items": [{"title": order.get("gig_title", "Service"), "license": order.get("tier", "").capitalize(), "price": price}],
+            "subtotal": price,
+            "platform_fee": fee,
+            "total": price,
+            "payment_method": "ReverSound Wallet Escrow",
+            "transaction_id": order_id[-12:].upper(),
+            "issued_at": datetime.now(timezone.utc).strftime("%d/%m/%Y"),
+        })
+        filename = f"ReverSound_Invoice_{order_id[-8:].upper()}.pdf"
+        return FastAPIResponse(
+            content=pdf_data,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+        )
+    except Exception as e:
+        raise HTTPException(500, f"Invoice generation failed: {str(e)}")
+
 @orders_router.post("/{order_id}/cancel")
 async def cancel_order(order_id: str, request: Request):
     """Cancel unfunded/funded order and refund buyer"""

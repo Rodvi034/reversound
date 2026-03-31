@@ -25,7 +25,11 @@ class GigCreate(BaseModel):
     category: str
     cover_url: Optional[str] = ""
     tags: List[str] = []
-    tiers: Dict[str, Any]  # basic, standard, premium
+    tiers: Dict[str, Any]
+    # Portfolio & video
+    preview_video_url: Optional[str] = ""     # YouTube/Vimeo embed or direct MP4
+    portfolio_images: Optional[List[str]] = []  # Up to 8 portfolio image URLs
+    portfolio_items: Optional[List[Dict[str, Any]]] = []  # {type, url, title, thumbnail}
 
 class GigUpdate(BaseModel):
     title: Optional[str] = None
@@ -77,7 +81,6 @@ async def get_gig(gig_id: str):
     if not gig:
         raise HTTPException(404, "Gig not found")
     await db.gigs.update_one({"_id": ObjectId(gig_id)}, {"$inc": {"total_views": 1}})
-    # Enrich with reviews
     reviews_cursor = db.reviews.find({"gig_id": gig_id}).sort("created_at", -1).limit(10)
     reviews = docs_to_list(await reviews_cursor.to_list(10))
     result = doc_to_dict(gig)
@@ -89,6 +92,24 @@ async def create_gig(body: GigCreate, request: Request):
     user = await get_current_user(request)
     if user["role"] not in SELLER_ROLES:
         raise HTTPException(403, "Only sellers (producers, engineers, designers, artists) can create gigs")
+
+    # Content moderation
+    from services.moderation_service import batch_moderate
+    mod_result = batch_moderate({
+        "title": body.title,
+        "description": body.description,
+        "tags": body.tags,
+    }, context="gig_description")
+
+    if mod_result["verdict"] == "BLOCKED":
+        raise HTTPException(400, f"İçerik politikası ihlali: {mod_result['reason']}")
+
+    auto_status = "pending"
+    if mod_result["verdict"] == "FLAGGED":
+        auto_status = "pending"  # Goes to admin review
+    elif user["role"] == "admin":
+        auto_status = "approved"
+
     db = get_db()
     gig_doc = {
         **body.model_dump(),
@@ -99,7 +120,9 @@ async def create_gig(body: GigCreate, request: Request):
         "rating": 0.0,
         "total_reviews": 0,
         "total_orders": 0,
-        "status": "approved" if user["role"] == "admin" else "pending",
+        "total_views": 0,
+        "status": auto_status,
+        "moderation_result": mod_result,
         "created_at": datetime.now(timezone.utc)
     }
     result = await db.gigs.insert_one(gig_doc)

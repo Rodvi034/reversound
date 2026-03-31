@@ -105,6 +105,27 @@ async def create_beat(body: BeatCreate, request: Request):
     user = await get_current_user(request)
     if user["role"] not in ("producer", "admin"):
         raise HTTPException(403, "Only producers can upload beats")
+
+    # Content moderation
+    from services.moderation_service import batch_moderate
+    mod_result = batch_moderate({"title": body.title, "description": body.description or "", "tags": body.tags}, context="beat_title")
+    if mod_result["verdict"] == "BLOCKED":
+        raise HTTPException(400, f"İçerik politikası ihlali: {mod_result['reason']}")
+
+    # Copyright fingerprinting (async, non-blocking)
+    copyright_result = None
+    if body.audio_url:
+        try:
+            from services.copyright_service import get_copyright_service
+            svc = get_copyright_service()
+            copyright_result = (await svc.check_audio_url(body.audio_url)).to_dict()
+            if copyright_result.get("status") == "MATCH" and copyright_result.get("confidence", 0) > 80:
+                raise HTTPException(400, f"Telif hakkı ihlali tespit edildi: {copyright_result.get('matched_track')}. Sadece kendi ürettiğin beatler yüklenebilir.")
+        except HTTPException:
+            raise
+        except Exception:
+            copyright_result = {"status": "SKIP", "message": "Check skipped"}
+
     db = get_db()
     beat_doc = {
         **body.model_dump(),
@@ -114,7 +135,9 @@ async def create_beat(body: BeatCreate, request: Request):
         "item_type": body.item_type or "beat",
         "plays": 0,
         "purchases": 0,
-        "status": "approved" if user["role"] == "admin" else "pending",
+        "status": "approved" if user["role"] == "admin" else ("pending" if mod_result["verdict"] == "FLAGGED" else "pending"),
+        "copyright_check": copyright_result,
+        "moderation_result": mod_result,
         "created_at": datetime.now(timezone.utc)
     }
     result = await db.beats.insert_one(beat_doc)

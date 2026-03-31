@@ -4,6 +4,7 @@ import { Users, Music2, Briefcase, CheckCircle, XCircle, Shield, AlertTriangle, 
 import axios from 'axios';
 import Layout from '@/components/Layout';
 import Logo, { LogoMark } from '@/components/Logo';
+import AdminCMS from '@/components/AdminCMS';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -80,6 +81,7 @@ const AdminPortal = () => {
     { id: 'gigs', label: 'Gig Onay', icon: Briefcase },
     { id: 'submissions', label: 'Başvurular', icon: CheckCircle },
     { id: 'financials', label: 'Finansal', icon: ShieldCheck },
+    { id: 'cms', label: 'CMS', icon: CheckCircle },
   ];
 
   return (
@@ -371,6 +373,11 @@ const AdminPortal = () => {
                   </div>
                 </div>
               </div>
+            )}
+
+            {/* CMS */}
+            {activeTab === 'cms' && (
+              <AdminCMS token={token} />
             )}
           </>
         )}
