@@ -13,7 +13,18 @@ ReverSound — Music Career Ecosystem & Freelance Marketplace
 - **AI:** Gemini 3.1 Pro Preview via emergentintegrations (EMERGENT_LLM_KEY)
 - **Escrow:** Mock escrow system (Iyzico/PayTR ready architecture)
 
-## Implemented Features (v7.0 — Sprint 7 — 2026-03-31)
+## Implemented Features (v8.0 — Sprint 8 — 2026-03-31)
+
+### Sprint 8 Additions (Enterprise Infrastructure)
+- [x] **PDF License Contracts** — `GET /api/orders/{id}/contract` generates professional PDF using fpdf2: parties info, beat details, license tier with full terms (Basic/Premium/Exclusive), governing law, signature lines, ReverSound branding
+- [x] **PDF Invoices** — `GET /api/orders/{id}/invoice` generates standard invoice PDF: invoice number, itemized list, platform fee breakdown, escrow payment status
+- [x] **PDF Downloads in Orders UI** — "Lisans Belgesi" + "Fatura" download links appear on completed orders in OrderManagement page
+- [x] **AI Content Moderation (3-tier)** — `services/moderation_service.py`: BLOCKED (extreme content: CSAM, illegal weapons/drugs, hate speech, copyright fraud), FLAGGED→admin queue (profanity, adult signals, piracy), OK. Applied on gig creation and beat uploads
+- [x] **Copyright Fingerprinting Architecture** — `services/copyright_service.py`: `CopyrightCheckService` class with full ACRCloud API integration (HMAC-SHA1 signing, multipart audio upload). Mock mode returns CLEAR when `ACRCLOUD_API_KEY` not set. Triggered on every beat upload
+- [x] **Admin CMS** — `/api/cms` (GET public, PUT admin, PATCH section, POST reset). Manages: hero text, badge, stats numbers, genre card images/colors, partner logos, announcement banner, testimonials. `AdminCMS.js` component with live editing in Admin Portal CMS tab
+- [x] **CMS-Driven Landing Page** — Landing page fetches CMS content on mount; hero title/badge, stats, genre cards, testimonials all dynamically loaded from DB with static fallbacks
+- [x] **Gig Video Preview + Portfolio Gallery** — `preview_video_url` field (YouTube embed or MP4) shown as video player on GigDetail. `portfolio_images[]` shown as clickable image grid. Both fields added to CreateGig form
+- [x] **Dark Mode Permanently Enforced** — `ThemeContext.toggleTheme()` is no-op, always `isDark=true`. Sun/Moon toggle button removed from Navbar. All `.light-mode { }` CSS rules stripped from index.css
 
 ### Sprint 7 Additions (Pre-Launch Polish)
 - [x] **Professional Beat Purchase Flow** — BuyModal removed. All beat purchases now go through `LicenseModal` (3-tier comparison: Basic Lease / Premium Lease / Exclusive Rights) → `CartContext.addItem()` → `CartDrawer` → `/checkout`. Clear feature matrix, legal rights info, micro-animations
