@@ -48,6 +48,12 @@ const GigDetail = () => {
 
   const handleMessage = async () => {
     if (!user) { navigate('/auth'); return; }
+    if (!gig.seller_id || gig.seller_id === 'demo') {
+      // Demo gig — no real seller
+      alert('Bu bir demo ilandır. Gerçek satıcıyla iletişim kurmak için platformdaki gerçek üretici ilanlarını inceleyin.');
+      return;
+    }
+    if (user.id === gig.seller_id) return;
     try {
       const res = await axios.post(
         `${API}/conversations`,
@@ -56,7 +62,9 @@ const GigDetail = () => {
       );
       navigate(`/messages/${res.data.id}`);
     } catch (err) {
-      if (err.response?.data?.detail?.includes('yourself')) return;
+      const detail = err.response?.data?.detail || '';
+      if (detail.includes('yourself')) return;
+      console.error('Message error:', detail);
     }
   };
 

@@ -95,13 +95,21 @@ async def ws_conversation(
             # Moderation
             is_flagged, flag_reason = moderate_message(content)
 
+            # DLP: mask instead of block for non-extreme content
+            content_to_store = content
+            dlp_masked = False
+            if not is_flagged:
+                from utils import mask_sensitive_content
+                content_to_store, dlp_masked, dlp_reason = mask_sensitive_content(content)
+
             msg_doc = {
                 "conversation_id": conversation_id,
                 "sender_id": user_id,
                 "sender_name": user_name,
-                "content": content if not is_flagged else "[Message blocked by moderation]",
+                "content": "[Message blocked by moderation]" if is_flagged else content_to_store,
+                "original_content_masked": dlp_masked,
                 "is_flagged": is_flagged,
-                "flag_reason": flag_reason if is_flagged else None,
+                "flag_reason": flag_reason if is_flagged else (dlp_reason if dlp_masked else None),
                 "created_at": datetime.now(timezone.utc)
             }
             result = await db.messages.insert_one(msg_doc)

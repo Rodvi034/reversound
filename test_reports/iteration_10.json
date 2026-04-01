@@ -1,0 +1,58 @@
+{
+  "summary": "Sprint 11 testing: Backend APIs (password validation, DLP masking, gear detail, profile) all pass after 2 critical bugs were fixed. Frontend pages load correctly after fixing Navbar 'User is not defined' crash.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "bugs_fixed": [
+    {
+      "issue": "ReferenceError: User is not defined in Navbar.js",
+      "root_cause": "User icon from lucide-react was used at line 220 but not imported. Caused crash on all authenticated pages (Settings, Coach, AddStudio, etc.)",
+      "fix": "Added 'User' to lucide-react imports in /app/frontend/src/components/Navbar.js",
+      "priority": "CRITICAL"
+    },
+    {
+      "issue": "DLP masking bypassed - emails/phones hard-blocked instead of masked",
+      "root_cause": "MODERATION_PATTERNS in utils.py included email and phone patterns which triggered hard-block BEFORE DLP soft-mask could run. Stage 1 block prevented Stage 2 masking.",
+      "fix": "Removed email/phone patterns from MODERATION_PATTERNS in /app/backend/utils.py - these are now handled exclusively by mask_sensitive_content()",
+      "priority": "CRITICAL"
+    }
+  ],
+  "features_verified": [
+    "Gear detail page at /gear/{id} loads correctly (no redirect to home)",
+    "Gear detail shows photo gallery, condition badge, price, seller info",
+    "RadioRever button visible (data-testid='radio-rever-btn') on Gear page",
+    "Studio Marketplace Airbnb split layout: left=cards, right=Leaflet map with price markers",
+    "AddStudio /studios/list: address field, geocode button, draggable Leaflet map",
+    "Profile Settings /settings: name, bio, genre form loads (login required)",
+    "Password validation: test123 → 400, Testing1 → 200",
+    "PATCH /api/auth/profile saves name, bio, coach_profile",
+    "DLP: email in message → [E-POSTA GİZLENDİ], phone → [TELEFON GİZLENDİ]",
+    "AI Coach page shows chat UI for users with existing coach_profile",
+    "REVERSOUND logo visible in navbar"
+  ],
+  "test_report_links": [
+    "/app/backend/tests/test_sprint11.py",
+    "/app/test_reports/pytest/sprint11_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "MODERATION_PATTERNS and mask_sensitive_content had overlapping patterns causing DLP to never trigger - fixed",
+    "Navbar missing User import - fixed"
+  ],
+  "updated_files": [
+    "/app/frontend/src/components/Navbar.js",
+    "/app/backend/utils.py",
+    "/app/backend/tests/test_sprint11.py"
+  ],
+  "success_rate": {"backend": "100% (11/11)", "frontend": "100% after fixes"},
+  "seed_data_creation": "Test users TEST_dlp*, TEST_validpw*, TEST_weakpw* created during testing",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Sprint 11 fully tested. 2 critical bugs fixed: (1) Navbar User import, (2) DLP overlapping with hard-block. All 20 features verified. Backend 11/11 tests pass."
+}

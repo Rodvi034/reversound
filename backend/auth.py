@@ -133,6 +133,7 @@ class ProfileUpdateRequest(BaseModel):
     bio: Optional[str] = None
     genres: Optional[list] = None
     avatar_url: Optional[str] = None
+    coach_profile: Optional[dict] = None  # AI Coach questionnaire answers
 
 # ── Endpoints ───────────────────────────────────────────────────────────────────
 VALID_ROLES = {"producer", "artist", "engineer", "designer", "buyer"}
@@ -145,6 +146,17 @@ def _get_frontend_url() -> str:
     origins = os.environ.get("CORS_ORIGINS", "http://localhost:3000").split(",")
     return os.environ.get("FRONTEND_URL", origins[0].strip())
 
+def validate_password(password: str) -> tuple[bool, str]:
+    """Enforce strong password rules: 8+ chars, 1 uppercase, 1 number."""
+    import re
+    if len(password) < 8:
+        return False, "Şifre en az 8 karakter olmalı"
+    if not re.search(r'[A-Z]', password):
+        return False, "Şifre en az 1 büyük harf içermeli (A-Z)"
+    if not re.search(r'\d', password):
+        return False, "Şifre en az 1 rakam içermeli (0-9)"
+    return True, ""
+
 @auth_router.post("/register")
 async def register(body: RegisterRequest, response: Response):
     db = get_db()
@@ -154,8 +166,11 @@ async def register(body: RegisterRequest, response: Response):
         raise HTTPException(400, "Email already registered")
     if await db.users.find_one({"username": body.username.lower()}):
         raise HTTPException(400, "Username already taken")
-    if len(body.password) < 6:
-        raise HTTPException(400, "Password must be at least 6 characters")
+
+    # Strong password validation
+    pw_ok, pw_msg = validate_password(body.password)
+    if not pw_ok:
+        raise HTTPException(400, pw_msg)
 
     user_doc = {
         "email": body.email,

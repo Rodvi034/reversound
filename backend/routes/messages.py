@@ -5,7 +5,7 @@ from typing import Optional, List
 from bson import ObjectId
 
 from database import get_db
-from utils import doc_to_dict, docs_to_list, moderate_message
+from utils import doc_to_dict, docs_to_list, moderate_message, mask_sensitive_content
 from auth import get_current_user
 
 messages_router = APIRouter(prefix="/conversations", tags=["messages"])
@@ -208,16 +208,24 @@ async def send_message(conversation_id: str, body: MessageCreate, request: Reque
     if user["id"] not in conv["participants"]:
         raise HTTPException(403, "Not authorized")
 
-    # Moderation check
+    # Stage 1: Hard block (extreme content — stays as is)
     is_flagged, flag_reason = moderate_message(body.content)
+
+    # Stage 2: DLP masking (contact info → replace placeholders)
+    content_to_store = body.content
+    dlp_masked = False
+    dlp_reason = ""
+    if not is_flagged:
+        content_to_store, dlp_masked, dlp_reason = mask_sensitive_content(body.content)
 
     msg_doc = {
         "conversation_id": conversation_id,
         "sender_id": user["id"],
         "sender_name": user["name"],
-        "content": body.content if not is_flagged else "[Message blocked by moderation]",
+        "content": "[Message blocked by moderation]" if is_flagged else content_to_store,
+        "original_content_masked": dlp_masked,
         "is_flagged": is_flagged,
-        "flag_reason": flag_reason if is_flagged else None,
+        "flag_reason": flag_reason if is_flagged else (dlp_reason if dlp_masked else None),
         "created_at": datetime.now(timezone.utc)
     }
     result = await db.messages.insert_one(msg_doc)

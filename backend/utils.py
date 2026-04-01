@@ -31,12 +31,10 @@ def docs_to_list(docs) -> list:
 
 # ── Message Moderation ─────────────────────────────────────────────────────────
 MODERATION_PATTERNS = [
-    (r'\b[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}\b', 'email address'),
-    (r'(\+?90|0)?[\s\-]?\(?\d{3}\)?[\s\-]?\d{3}[\s\-]?\d{2}[\s\-]?\d{2}', 'phone number'),
+    # NOTE: emails and phone numbers are now handled by soft DLP (mask_sensitive_content)
+    # Only extreme/spam content that warrants hard blocking remains here
     (r'https?://\S+|www\.\S+', 'external URL'),
-    (r'(?i)(instagram|telegram|whatsapp|snapchat|twitter|tiktok|discord|facebook|signal)[\s:@./]+\w+', 'social media contact'),
     (r'(?<!\w)@[A-Za-z0-9_.]{2,}', 'social media handle'),
-    (r'\b\d{10,11}\b', 'phone number'),
 ]
 
 def moderate_message(text: str):
@@ -44,6 +42,47 @@ def moderate_message(text: str):
         if re.search(pattern, text, re.IGNORECASE):
             return True, f"Message blocked: contains {reason}. All communication must stay on ReverSound for your protection."
     return False, ""
+
+def mask_sensitive_content(text: str) -> tuple[str, bool, str]:
+    """
+    DLP: Mask sensitive contact info in chat messages instead of blocking.
+    Messages are delivered but sensitive data is replaced with placeholders.
+    """
+    import re as _re
+    masked = text
+    had_sensitive = False
+
+    # Mask emails
+    if _re.search(r'\b[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}\b', masked, _re.IGNORECASE):
+        masked = _re.sub(r'\b[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}\b', '[E-POSTA GİZLENDİ]', masked, flags=_re.IGNORECASE)
+        had_sensitive = True
+
+    # Mask Turkish phone numbers (various formats)
+    phone_patterns = [
+        r'(\+?90|0)[\s\-\.]?\(?\d{3}\)?[\s\-\.]?\d{3}[\s\-\.]?\d{2}[\s\-\.]?\d{2}',
+        r'\b0\d{10}\b',
+        r'\+90\d{10}\b',
+        r'\b5\d{2}[\s\-]?\d{3}[\s\-]?\d{2}[\s\-]?\d{2}\b',
+    ]
+    for pp in phone_patterns:
+        if _re.search(pp, masked, _re.IGNORECASE):
+            masked = _re.sub(pp, '[TELEFON GİZLENDİ]', masked, flags=_re.IGNORECASE)
+            had_sensitive = True
+
+    # Mask social handles with platform names
+    social_pattern = r'(?i)(instagram|telegram|whatsapp|snapchat|discord|signal|facebook|twitter|tiktok)[\s:@./]+[\w.]+'
+    if _re.search(social_pattern, masked, _re.IGNORECASE):
+        masked = _re.sub(social_pattern, '[SOSYAL MEDYA GİZLENDİ]', masked, flags=_re.IGNORECASE)
+        had_sensitive = True
+
+    # Mask external URLs (not reversound.com)
+    ext_url = r'https?://(?!reversound\.com)\S+'
+    if _re.search(ext_url, masked, _re.IGNORECASE):
+        masked = _re.sub(ext_url, '[LİNK GİZLENDİ]', masked, flags=_re.IGNORECASE)
+        had_sensitive = True
+
+    reason = "İletişim bilgisi gizlendi — güvenliğiniz için tüm görüşmeleri platform üzerinde tutun." if had_sensitive else ""
+    return masked, had_sensitive, reason
 
 # ── Feed / Post Moderation ──────────────────────────────────────────────────────
 PROFANITY_LIST = [

@@ -49,6 +49,9 @@ import GearMarketplace from '@/pages/GearMarketplace';
 import SellGear from '@/pages/SellGear';
 import StudioMarketplace from '@/pages/StudioMarketplace';
 import StudioDetail from '@/pages/StudioDetail';
+import GearDetail from '@/pages/GearDetail';
+import ProfileSettings from '@/pages/ProfileSettings';
+import AddStudio from '@/pages/AddStudio';
 
 function App() {
   return (
@@ -83,6 +86,7 @@ function App() {
                       <Route path="/payment" element={<PaymentPage />} />
                       <Route path="/payment/callback" element={<PaymentPage />} />
                       <Route path="/gear" element={<GearMarketplace />} />
+                      <Route path="/gear/:id" element={<GearDetail />} />
                       <Route path="/studios" element={<StudioMarketplace />} />
                       <Route path="/studios/:id" element={<StudioDetail />} />
 
@@ -105,7 +109,8 @@ function App() {
                       <Route path="/favorites" element={<ProtectedRoute><FavoritesPage /></ProtectedRoute>} />
                       <Route path="/blog/create" element={<ProtectedRoute><CreateBlogPost /></ProtectedRoute>} />
                       <Route path="/gear/sell" element={<ProtectedRoute><SellGear /></ProtectedRoute>} />
-                      <Route path="/studios/list" element={<ProtectedRoute><StudioMarketplace /></ProtectedRoute>} />
+                      <Route path="/studios/list" element={<ProtectedRoute><AddStudio /></ProtectedRoute>} />
+                      <Route path="/settings" element={<ProtectedRoute><ProfileSettings /></ProtectedRoute>} />
 
                       {/* Admin only */}
                       <Route path="/admin" element={<ProtectedRoute adminOnly><AdminPortal /></ProtectedRoute>} />

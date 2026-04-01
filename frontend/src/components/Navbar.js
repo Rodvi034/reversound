@@ -8,7 +8,7 @@ import {
   Music2, Search, ChevronDown, LogOut, LayoutDashboard, ShieldCheck,
   Wallet, Plus, Globe, Briefcase, Package, Radio, ListMusic,
   Users, BookOpen, Upload, Video, TrendingUp, LifeBuoy, Crown, ShoppingBag,
-  MapPin, Guitar
+  MapPin, Guitar, User
 } from 'lucide-react';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger
@@ -216,7 +216,10 @@ const Navbar = () => {
                       <p className="text-xs font-mono uppercase" style={{ color: getRoleBadge(user.role) }}>{user.role}</p>
                     </div>
                     <DropdownMenuSeparator className="bg-white/10" />
-                    <DropdownMenuItem onClick={() => navigate('/dashboard')} className="cursor-pointer hover:bg-white/5" data-testid="menu-dashboard">
+                    <DropdownMenuItem onClick={() => navigate('/settings')} className="cursor-pointer hover:bg-white/5" data-testid="menu-settings">
+                    <User size={14} className="mr-2" /> Profil Ayarları
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/dashboard')} className="cursor-pointer hover:bg-white/5" data-testid="menu-dashboard">
                       <LayoutDashboard size={14} className="mr-2" /> Panel
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => navigate('/roadmap')} className="cursor-pointer hover:bg-white/5">

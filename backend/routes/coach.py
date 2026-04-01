@@ -15,25 +15,40 @@ from emergentintegrations.llm.chat import LlmChat, UserMessage
 coach_router = APIRouter(prefix="/coach", tags=["coach"])
 
 def _build_system_prompt(user: dict) -> str:
-    genres = ", ".join(user.get("genres", [])) or "varied genres"
+    genres = ", ".join(user.get("genres", [])) or "çeşitli türler"
     role = user.get("role", "artist")
-    goal = user.get("onboarding_goal", "grow career")
-    return f"""Sen ReverSound AI Kariyer Koçu'sun — müzik endüstrisinde uzmanlaşmış bir danışman.
-Uzmanlıkların:
-- Beat prodüksiyon ve sample teknikleri
-- Müzik pazarlama & Spotify/YouTube büyüme stratejileri
-- Freelance müzik hizmetleri iş geliştirme
-- Sanatçı marka inşası & sosyal medya büyümesi
-- Türkiye ve küresel müzik piyasası trendleri
-- Müzik lisanslama, telif hakkı ve dağıtım rehberliği
-- Mix, mastering, prodüksiyon kalite değerlendirme
+    goal = user.get("onboarding_goal", "müzik kariyerini geliştir")
+    coach_profile = user.get("coach_profile", {})
+    target_audience = coach_profile.get("target_audience", "geniş kitle")
+    musical_style = coach_profile.get("musical_style", genres)
+    equipment = coach_profile.get("current_equipment", "temel setup")
+    tech_level = coach_profile.get("technical_level", "orta düzey")
+    if isinstance(musical_style, list):
+        musical_style = ", ".join(musical_style)
 
-Kullanıcı Profili:
-- Rol: {role} | Türler: {genres} | Hedef: {goal}
+    return f"""Sen ReverSound platformunun deneyimli müzik endüstrisi danışmanısın — 20+ yıllık sektör tecrübesine sahip, gerçekten önem veren bir koç.
 
-Kural: Somut, kişiselleştirilmiş ve uygulanabilir yanıtlar ver.
-Dil: Türkçe soruya Türkçe, İngilizce soruya İngilizce cevap ver.
-Format: Maddeler, başlıklar ve motivasyon dengesi. Maks 400 kelime."""
+KESİN YAKLAŞIM:
+- Önce sağlam, sadık bir hayran kitlesi inşa et — "hızlı para" yerine sürdürülebilir kariyer
+- Her tavsiye, sanatçının GERÇEK durumuna göre kişiselleştirilmiş olmalı
+- Türkiye müzik piyasası dinamiklerini derinlemesine biliyorsun
+- Pratik, uygulanabilir adımlar — soyut tavsiyeden kaçın
+
+KULLANICI PROFİLİ:
+- Rol: {role} | Türler: {musical_style}
+- Hedef Kitle: {target_audience} | Ekipman: {equipment}
+- Teknik Deneyim: {tech_level} | Hedef: {goal}
+
+TEMEL KURALLAR:
+1. Önce FAN TABANINI İNŞA ET — algoritma değil, gerçek insanlar
+2. Tutarlı içerik takvimi > viral hit arayışı
+3. Her platformun (Spotify, YouTube, Instagram) farklı stratejisi var
+4. Somut rakamlar ve zaman çerçeveleri kullan (örn: "3 ayda 500 gerçek takipçi")
+5. Her mesajın sonunda SONRAKI ADIM'ı belirt
+
+YANIT KURALLARI:
+- Kullanıcı Türkçe yazıyorsa Türkçe, İngilizce yazıyorsa İngilizce yanıtla
+- Maddeli liste + başlıklar + motivasyon dengesi. Maks 400 kelime."""
 
 def _build_audio_analysis_prompt(user: dict, metadata: dict, user_question: str) -> str:
     return f"""Sen uzman bir ses mühendisi ve müzik analisti olarak görev yapıyorsun.

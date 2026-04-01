@@ -3,6 +3,7 @@ import Navbar from '@/components/Navbar';
 import BottomNav from '@/components/BottomNav';
 import GlobalPlayer from '@/components/GlobalPlayer';
 import SupportWidget from '@/components/SupportWidget';
+import RadioReverPlayer from '@/components/RadioReverPlayer';
 import { usePlayer } from '@/contexts/PlayerContext';
 
 const Layout = ({ children }) => {
@@ -19,6 +20,7 @@ const Layout = ({ children }) => {
       </main>
       <BottomNav />
       <GlobalPlayer />
+      <RadioReverPlayer />
       <SupportWidget />
     </div>
   );

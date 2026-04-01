@@ -5,6 +5,8 @@ import axios from 'axios';
 import Layout from '@/components/Layout';
 import FileUpload from '@/components/FileUpload';
 
+import CoachOnboarding from '@/components/CoachOnboarding';
+
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const AI_BG = "https://static.prod-images.emergentagent.com/jobs/8d651a01-9aa6-4ca1-8c99-7adb0f65b5e1/images/5511da9ef17cb91e58c9546e4f84d9fc6ec4cb447279bd1f2245e44e021c1504.png";
 
@@ -25,6 +27,7 @@ const AICareerCoach = () => {
   const [uploadedFile, setUploadedFile] = useState(null);
   const [analysisQuestion, setAnalysisQuestion] = useState('Bu ses dosyasını analiz et ve geri bildirim ver.');
   const [analyzing, setAnalyzing] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
@@ -71,10 +74,26 @@ const AICareerCoach = () => {
     } finally { setAnalyzing(false); }
   };
 
-  const clearHistory = async () => {
+  const handleOnboardingComplete = async (answers) => {
+    // Save coach profile to user
+    try {
+      await axios.patch(`${API}/auth/profile`,
+        { coach_profile: answers },
+        { headers: { Authorization: `Bearer ${token}` }, withCredentials: true }
+      );
+    } catch {}
+    setShowOnboarding(false);
+    // Send initial roadmap request based on answers
+    const styles = Array.isArray(answers.musical_style) ? answers.musical_style.join(', ') : answers.musical_style;
+    const initialMsg = `Merhaba Koçum! İşte profilim:\n- Hedef Kitle: ${answers.target_audience}\n- Müzik Tarzı: ${styles}\n- Ekipman: ${answers.current_equipment}\n- Deneyim: ${answers.technical_level}\n\nBana müzik kariyerim için kişiselleştirilmiş bir yol haritası hazırla. Nereden başlamalıyım?`;
+    sendMessage(initialMsg);
+  };
+
+  const handleClearHistory = async () => {
     try {
       await axios.delete(`${API}/coach/history`, { headers: { Authorization: `Bearer ${token}` }, withCredentials: true });
       setMessages([]);
+      setShowOnboarding(true);
     } catch {}
   };
 
@@ -83,7 +102,11 @@ const AICareerCoach = () => {
   return (
     <Layout>
       <div className="max-w-3xl mx-auto px-4 py-6 flex flex-col" style={{ height: 'calc(100vh - 4rem)' }}>
-        {/* Header */}
+        {/* Show onboarding if first time */}
+        {showOnboarding ? (
+          <CoachOnboarding onComplete={handleOnboardingComplete} />
+        ) : (
+        <React.Fragment>
         <div className="flex items-center justify-between mb-4 flex-shrink-0">
           <div>
             <h1 className="font-heading font-bold text-xl text-white flex items-center gap-2">
@@ -100,7 +123,7 @@ const AICareerCoach = () => {
               <Music size={12} /> Ses Analizi {showAnalysis ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
             </button>
             {hasMessages && (
-              <button onClick={clearHistory}
+            <button onClick={handleClearHistory}
                 className="flex items-center gap-1.5 text-xs text-[#a1a1aa] hover:text-[#ec4899] border border-white/10 hover:border-[#ec4899]/30 px-3 py-1.5 rounded-md transition-all"
                 data-testid="clear-history-btn">
                 <Trash2 size={12} /> Temizle
@@ -232,6 +255,8 @@ const AICareerCoach = () => {
             {loading ? <Loader size={14} className="animate-spin" /> : <Send size={14} />}
           </button>
         </form>
+        </React.Fragment>
+        )} {/* end of showOnboarding conditional */}
       </div>
     </Layout>
   );
