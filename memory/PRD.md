@@ -13,7 +13,16 @@ ReverSound — Music Career Ecosystem & Freelance Marketplace
 - **AI:** Gemini 3.1 Pro Preview via emergentintegrations (EMERGENT_LLM_KEY)
 - **Escrow:** Mock escrow system (Iyzico/PayTR ready architecture)
 
-## Implemented Features (v9.0 — Sprint 9 — 2026-04-01) COMMERCIAL LAUNCH
+## Implemented Features (v10.0 — Sprint 10 — 2026-04-01) MARKETPLACE MASTERY
+
+### Sprint 10 Additions
+- [x] **Studio Availability Calendar** — `StudioAvailabilityCalendar.js` (react-big-calendar v1.19.4 + date-fns). Renter view: drag-to-select time slots, conflict detection, dynamic price calculator (₺/h × hours), green selection preview, Reservasyon Özeti panel with escrow info. Dark theme CSS overrides in index.css
+- [x] **Studio Owner Calendar** — `StudioOwnerCalendar.js` — Owners see all reservations (purple) + blocked slots (gray). Click-to-block or datetime form, drag-to-select, unblock confirmation, monthly stats (reservations count, blocked slots, total rental hours)
+- [x] **StudioDetail Page** — `/studios/:id` with: Photo gallery (prev/next carousel), 3 tabs (Bilgiler/Rezervasyon/Yorumlar), amenities grid, equipment list, pricing sidebar, "Rezervasyon Yap" → calendar tab, conditional owner/renter view
+- [x] **Calendar Block/Unblock API** — `POST /api/studios/block` owner-blocks time (reason field), `DELETE /api/studios/block/{id}` removes block. Calendar endpoint returns merged booked + blocked events
+- [x] **Unified Revenue Analytics** — Admin financials now includes: Studio GMV + commission, Gear GMV, `category_breakdown` (4 categories with visual progress bars), `monthly_revenue` table with Gig/Beat/Stüdyo columns, total GMV across all channels
+- [x] **Demo Marketplace Seeder** — `seed_demo_marketplaces.py` with 3 realistic Istanbul/Ankara/Izmir studios (full photos, amenities, equipment lists, correct lat/lng) and 6 gear listings (Fender Stratocaster ₺28K, KRK Rokit 5 ₺8.5K, Shure SM7B ₺12K, NI Komplete Kontrol ₺4.5K, Roland TR-8S ₺18.5K, Focusrite Scarlett 2i2 ₺4.2K). Auto-seeded on backend startup. Force-seed via `POST /api/admin/financials/seed-demo?force=true`
+- [x] **Studio API Bug Fix** — Type annotations added to `list_studios()` parameters (city, search, page, limit) to fix FastAPI query param parsing
 
 ### Sprint 9 Additions
 - [x] **White-Labeling** — Title changed to "ReverSound - Müzik Kariyer Ekosistemi", badge hidden via CSS
