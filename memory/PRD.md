@@ -13,7 +13,15 @@ ReverSound — Music Career Ecosystem & Freelance Marketplace
 - **AI:** Gemini 3.1 Pro Preview via emergentintegrations (EMERGENT_LLM_KEY)
 - **Escrow:** Mock escrow system (Iyzico/PayTR ready architecture)
 
-## Implemented Features (v11.0 — Sprint 11 — 2026-04-01) ENTERPRISE POLISH
+## Implemented Features (v12.0 — Sprint 12 — 2026-04-01) RETENTION ENGINE
+
+### Sprint 12 Additions
+- [x] **AI-Curated Daily Mix** — `GET /api/radiorever/daily-mix`: Uses `user.coach_profile.musical_style` + `GENRE_MAP` expansion (Trap→[Trap,Drill]). 70% preferred genres + 30% discovery. Shuffled for freshness. Returns `mix_type: personalized|trending`. "Günün Özel Mix'i" button in RadioRever player loads AI playlist and auto-plays
+- [x] **RadioRever Analytics Pipeline** — `POST /api/radiorever/track-play`: Logs after 15-second threshold in frontend (clearTimeout on track change). 2-minute dedup window prevents spam. Increments beat.plays. Admin stats: `total_radio_plays`, `unique_beats`, `unique_listeners`, `top_beats` enriched with titles. Producer stats: own beats only. Dashboard shows RadioRever discovery card for producers
+- [x] **Mutual Reviews System** — Double-blind: `POST /api/reviews/submit` (buyer→seller AND seller→buyer). Validates reviewer is part of order/reservation. Prevents duplicates. `GET /api/reviews/pending` finds completed orders not yet reviewed. Aggregate rating cached in `user.avg_rating`. `GET /api/reviews/user/{id}` for public profile display. `MutualReviewModal` with 5-star + comment. Dashboard shows pending reviews alert
+- [x] **Order-Specific Chat Threads** — Order creation auto-creates a conversation with `order_id` field linking buyer↔seller to the specific order. Conversation has `order_title` for context header
+- [x] **Admin RBAC UI** — "Yetkilendirme" tab in Admin Portal. `RBACPanel` component shows all 19 users with dropdown role assignment. `PATCH /api/admin/rbac/assign` updates `staff_role`. Role values: `support`, `content_mod`, `super_admin`. `GET /api/admin/rbac/audit-log` tracks all role changes. Admin users are protected from role changes
+- [x] **Testing Agent Auto-Fix** — Dashboard.js `Radio` icon import missing (causing full page crash) — fixed by testing agent
 
 ### Sprint 11 Additions + Bug Fixes
 - [x] **CRITICAL BUG FIXED: Gear Market** — `/gear/:id` route + full `GearDetail.js` page: photo carousel (prev/next), condition badge, brand, price, negotiable flag, seller profile link, "Satıcıya Mesaj At" CTA, related listings grid
