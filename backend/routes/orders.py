@@ -190,6 +190,25 @@ async def create_order(body: OrderCreate, request: Request):
 
     await db.gigs.update_one({"_id": ObjectId(body.gig_id)}, {"$inc": {"total_orders": 1}})
 
+    # Auto-create order-specific conversation between buyer and seller
+    try:
+        participants = sorted([user["id"], gig["seller_id"]])
+        existing_conv = await db.conversations.find_one({
+            "participants": {"$all": participants},
+            "order_id": order_id
+        })
+        if not existing_conv:
+            await db.conversations.insert_one({
+                "participants": participants,
+                "order_id": order_id,
+                "order_title": gig["title"],
+                "last_message": None,
+                "last_message_at": datetime.now(timezone.utc),
+                "created_at": datetime.now(timezone.utc)
+            })
+    except Exception:
+        pass
+
     # Trigger notifications
     try:
         import notification_service as ns

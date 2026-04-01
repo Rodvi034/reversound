@@ -6,6 +6,112 @@ import Layout from '@/components/Layout';
 import Logo, { LogoMark } from '@/components/Logo';
 import AdminCMS from '@/components/AdminCMS';
 
+const API_URL = `${process.env.REACT_APP_BACKEND_URL}/api`;
+
+const STAFF_ROLES = [
+  { value: '', label: 'Normal Kullanıcı', color: '#a1a1aa' },
+  { value: 'support', label: 'Destek Uzmanı', color: '#06b6d4', desc: 'Sadece destek talepleri' },
+  { value: 'content_mod', label: 'İçerik Moderatör', color: '#f59e0b', desc: 'Beat/Gig onaylama' },
+  { value: 'super_admin', label: 'Süper Admin', color: '#ec4899', desc: 'Tam yetkili erişim' },
+];
+
+const RBACPanel = ({ users, token, headers, onRefresh }) => {
+  const [assigning, setAssigning] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const assignRole = async (userId, role) => {
+    setAssigning(userId);
+    try {
+      await axios.patch(`${API_URL}/admin/rbac/assign`,
+        { user_id: userId, staff_role: role || null },
+        { headers, withCredentials: true }
+      );
+      onRefresh?.();
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Rol atanamadı');
+    } finally { setAssigning(''); }
+  };
+
+  const filtered = users.filter(u =>
+    !searchTerm || u.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    u.email?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-sm font-semibold text-white">Yetki Yönetimi</h3>
+          <p className="text-xs text-[#a1a1aa] mt-0.5">Kullanıcılara özel yetki rolleri atayın</p>
+        </div>
+        <input type="text" placeholder="Kullanıcı ara..." value={searchTerm}
+          onChange={e => setSearchTerm(e.target.value)}
+          className="rs-input text-sm h-9 w-48" />
+      </div>
+
+      {/* Role legend */}
+      <div className="flex flex-wrap gap-2">
+        {STAFF_ROLES.slice(1).map(r => (
+          <div key={r.value} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border text-xs"
+            style={{ borderColor: `${r.color}30`, background: `${r.color}10`, color: r.color }}>
+            <div className="w-1.5 h-1.5 rounded-full" style={{ background: r.color }} />
+            {r.label}: {r.desc}
+          </div>
+        ))}
+      </div>
+
+      {/* Users table */}
+      <div className="rs-card overflow-hidden">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-white/5 text-xs font-mono uppercase text-[#a1a1aa]">
+              <th className="text-left px-4 py-3">Kullanıcı</th>
+              <th className="text-left px-4 py-3 hidden md:table-cell">Rol</th>
+              <th className="text-left px-4 py-3">Mevcut Yetki</th>
+              <th className="text-left px-4 py-3">Yetki Ata</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-white/5">
+            {filtered.slice(0, 20).map(u => {
+              const currentRole = STAFF_ROLES.find(r => r.value === (u.staff_role || '')) || STAFF_ROLES[0];
+              return (
+                <tr key={u.id} className="hover:bg-[#1a1a1f] transition-colors">
+                  <td className="px-4 py-3">
+                    <p className="text-white font-medium">{u.name}</p>
+                    <p className="text-xs text-[#a1a1aa]">{u.email}</p>
+                  </td>
+                  <td className="px-4 py-3 hidden md:table-cell">
+                    <span className="badge-genre capitalize">{u.role}</span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className="text-xs font-semibold" style={{ color: currentRole.color }}>
+                      {currentRole.label}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <select
+                      value={u.staff_role || ''}
+                      onChange={e => assignRole(u.id, e.target.value)}
+                      disabled={assigning === u.id || u.role === 'admin'}
+                      className="rs-input text-xs h-8 py-0"
+                      data-testid={`rbac-select-${u.id}`}
+                    >
+                      {STAFF_ROLES.map(r => (
+                        <option key={r.value} value={r.value}>{r.label}</option>
+                      ))}
+                    </select>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        {filtered.length === 0 && <div className="text-center py-8 text-[#a1a1aa] text-sm">Kullanıcı bulunamadı.</div>}
+      </div>
+    </div>
+  );
+};
+
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const AdminPortal = () => {
@@ -17,6 +123,7 @@ const AdminPortal = () => {
   const [gigs, setGigs] = useState([]);
   const [submissions, setSubmissions] = useState([]);
   const [financials, setFinancials] = useState(null);
+  const [rbacUsers, setRbacUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState('');
 
@@ -44,6 +151,9 @@ const AdminPortal = () => {
       } else if (tab === 'financials') {
         const res = await axios.get(`${API}/admin/financials`, { headers, ...creds });
         setFinancials(res.data);
+      } else if (tab === 'rbac') {
+        const res = await axios.get(`${API}/admin/rbac/users?limit=30`, { headers, ...creds });
+        setRbacUsers(res.data?.users || []);
       }
     } catch {} finally { setLoading(false); }
   };
@@ -82,6 +192,7 @@ const AdminPortal = () => {
     { id: 'submissions', label: 'Başvurular', icon: CheckCircle },
     { id: 'financials', label: 'Finansal', icon: ShieldCheck },
     { id: 'cms', label: 'CMS', icon: CheckCircle },
+    { id: 'rbac', label: 'Yetkilendirme', icon: ShieldCheck },
   ];
 
   return (
@@ -447,6 +558,11 @@ const AdminPortal = () => {
             {/* CMS */}
             {activeTab === 'cms' && (
               <AdminCMS token={token} />
+            )}
+
+            {/* RBAC — Role-Based Access Control */}
+            {activeTab === 'rbac' && (
+              <RBACPanel users={rbacUsers} token={token} headers={headers} onRefresh={() => fetchData('rbac')} />
             )}
           </>
         )}

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { Music2, Briefcase, Wallet, TrendingUp, Play, Upload, Plus, ArrowRight, Loader } from 'lucide-react';
+import { Music2, Briefcase, Wallet, TrendingUp, Play, Upload, Plus, ArrowRight, Loader, Radio } from 'lucide-react';
 import axios from 'axios';
 import Layout from '@/components/Layout';
 
@@ -29,7 +29,10 @@ const Dashboard = () => {
   const [orders, setOrders] = useState([]);
   const [myBeats, setMyBeats] = useState([]);
   const [myGigs, setMyGigs] = useState([]);
+  const [radioStats, setRadioStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [pendingReviews, setPendingReviews] = useState([]);
+  const [activeReview, setActiveReview] = useState(null);
 
   useEffect(() => {
     const headers = { Authorization: `Bearer ${token}` };
@@ -43,11 +46,17 @@ const Dashboard = () => {
       ['producer', 'engineer', 'designer', 'artist', 'admin'].includes(user?.role)
         ? axios.get(`${API}/gigs/my`, { headers, ...creds })
         : Promise.resolve({ data: [] }),
-    ]).then(([w, o, b, g]) => {
+      // RadioRever stats (non-blocking)
+      axios.get(`${API}/radiorever/stats`, { headers, ...creds }).catch(() => null),
+      // Pending reviews
+      axios.get(`${API}/reviews/pending`, { headers, ...creds }).catch(() => null),
+    ]).then(([w, o, b, g, rr, pr]) => {
       setWallet(w.data);
       setOrders(o.data || []);
       setMyBeats(Array.isArray(b.data) ? b.data : []);
       setMyGigs(Array.isArray(g.data) ? g.data : []);
+      if (rr) setRadioStats(rr.data);
+      if (pr) setPendingReviews(pr.data || []);
     }).catch(() => {}).finally(() => setLoading(false));
   }, [token, user]);
 
@@ -68,7 +77,8 @@ const Dashboard = () => {
   const SELLER_ROLES = ['producer', 'engineer', 'designer', 'artist', 'admin'];
 
   return (
-    <Layout>
+    <>
+      <Layout>
       <div className="max-w-6xl mx-auto px-4 py-6">
         {/* Welcome */}
         <div className="mb-8 animate-fade-up">
@@ -92,6 +102,45 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Commission Tier for sellers */}
           <CommissionTier />
+
+          {/* Pending Reviews Alert */}
+          {pendingReviews.length > 0 && (
+            <div className="rs-card p-4 border-[#f59e0b]/20 animate-fade-up">
+              <p className="text-xs font-mono uppercase text-[#f59e0b] mb-3">
+                Bekleyen Değerlendirmeler ({pendingReviews.length})
+              </p>
+              <div className="space-y-2">
+                {pendingReviews.slice(0, 3).map(r => (
+                  <div key={r.id} className="flex items-center justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-white truncate">{r.title}</p>
+                      <p className="text-[10px] text-[#a1a1aa]">{r.other_party_name}</p>
+                    </div>
+                    <button
+                      onClick={() => setActiveReview(r)}
+                      className="text-xs bg-[#f59e0b]/10 hover:bg-[#f59e0b]/20 text-[#f59e0b] border border-[#f59e0b]/20 px-3 py-1.5 rounded-md transition-all flex-shrink-0"
+                      data-testid={`review-btn-${r.id}`}
+                    >
+                      Değerlendir
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* RadioRever stats for producers */}
+          {radioStats && (radioStats.total_radio_plays > 0) && (
+            <div className="rs-card p-4 border-[#ec4899]/20">
+              <div className="flex items-center gap-2 mb-2">
+                <Radio size={14} className="text-[#ec4899]" />
+                <p className="text-xs font-mono uppercase text-[#a1a1aa]">RadioRever Keşif</p>
+              </div>
+              <p className="text-2xl font-bold text-[#ec4899]">{radioStats.total_radio_plays}</p>
+              <p className="text-xs text-[#a1a1aa]">RadioRever'den dinlenme</p>
+              {radioStats.unique_listeners && <p className="text-xs text-[#a1a1aa]">{radioStats.unique_listeners} farklı dinleyici</p>}
+            </div>
+          )}
 
           {/* Quick actions */}
           <div className="space-y-4">
@@ -217,6 +266,16 @@ const Dashboard = () => {
         )}
       </div>
     </Layout>
+
+    {/* Mutual Review Modal */}
+    {activeReview && (
+      <MutualReviewModal
+        review={activeReview}
+        onClose={() => setActiveReview(null)}
+        onDone={() => setPendingReviews(prev => prev.filter(r => r.id !== activeReview.id))}
+      />
+    )}
+  </>
   );
 };
 

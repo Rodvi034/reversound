@@ -38,6 +38,9 @@ from routes.cms import cms_router
 from routes.gear import gear_router
 from routes.studios import studios_router
 from routes.ai_tools import studio_tools_router
+from routes.radiorever import radiorever_router
+from routes.reviews import reviews_router
+from routes.rbac import rbac_router
 from seed_data import seed_demo_data
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s %(levelname)s %(message)s')
@@ -100,7 +103,7 @@ for router in [
     liveroom_http_router, analytics_router, payment_router, notifications_router,
     profiles_router, financials_router, favorites_router, job_requests_router,
     blog_router, studio_router, cms_router, gear_router, studios_router,
-    studio_tools_router,
+    studio_tools_router, radiorever_router, reviews_router, rbac_router,
 ]:
     app.include_router(router, prefix="/api")
 
