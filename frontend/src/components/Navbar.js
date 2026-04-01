@@ -7,7 +7,8 @@ import { useCart } from '@/contexts/CartContext';
 import {
   Music2, Search, ChevronDown, LogOut, LayoutDashboard, ShieldCheck,
   Wallet, Plus, Globe, Briefcase, Package, Radio, ListMusic,
-  Users, BookOpen, Upload, Video, TrendingUp, LifeBuoy, Crown, ShoppingBag
+  Users, BookOpen, Upload, Video, TrendingUp, LifeBuoy, Crown, ShoppingBag,
+  MapPin, Guitar
 } from 'lucide-react';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger
@@ -17,10 +18,12 @@ import NotificationCenter from '@/components/NotificationCenter';
 import CartDrawer from '@/components/CartDrawer';
 
 const EXPLORE_ITEMS = [
-  { label: 'Beatler', href: '/beats', icon: Music2, desc: 'Tüm beat ve sample\'lar' },
+  { label: 'Beatler', href: '/beats', icon: Music2, desc: 'Tüm beat ve samplelar' },
   { label: 'Sound Packs', href: '/beats?type=pack', icon: Package, desc: 'Drum kits ve loop paketleri' },
   { label: 'Servisler', href: '/gigs', icon: Briefcase, desc: 'Freelance müzik hizmetleri' },
-  { label: 'Playlist', href: '/playlists', icon: ListMusic, desc: 'Küratörlü playlist\'ler' },
+  { label: 'Stüdyo Kirala', href: '/studios', icon: MapPin, desc: 'Kayıt stüdyosu rezervasyonu' },
+  { label: 'Gear Market', href: '/gear', icon: Guitar, desc: 'İkinci el müzik aletleri' },
+  { label: 'Playlist', href: '/playlists', icon: ListMusic, desc: 'Küratörlü playlistler' },
   { label: 'Studio Feed', href: '/feed', icon: Radio, desc: 'Prodüktör topluluğu' },
   { label: 'İş Talepleri', href: '/jobs', icon: Users, desc: 'Proje talep panosu' },
   { label: 'Blog', href: '/blog', icon: BookOpen, desc: 'Prodüksiyon rehberleri' },

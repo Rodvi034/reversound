@@ -44,7 +44,12 @@ const AuthPage = () => {
       await login(loginForm.email, loginForm.password);
       navigate('/dashboard');
     } catch (err) {
-      setError(formatError(err.response?.data?.detail) || 'Giriş yapılamadı');
+      const detail = err.response?.data?.detail || '';
+      if (detail === 'EMAIL_NOT_VERIFIED') {
+        setError('E-posta adresiniz henüz doğrulanmamış. Lütfen gelen kutunuzu kontrol edin.');
+      } else {
+        setError(formatError(detail) || 'Giriş yapılamadı');
+      }
     } finally { setLoading(false); }
   };
 
@@ -129,15 +134,25 @@ const AuthPage = () => {
                 </div>
               </div>
               <button
-                type="submit" disabled={loading}
+                type="submit"
+                disabled={loading}
                 className="w-full bg-[#8b5cf6] hover:bg-[#7c3aed] disabled:opacity-50 text-white font-semibold py-2.5 rounded-md transition-all hover:shadow-glow flex items-center justify-center gap-2 mt-2"
                 data-testid="login-submit-btn"
               >
                 {loading ? <Loader size={16} className="animate-spin" /> : 'Giriş Yap'}
               </button>
-              <p className="text-center text-xs text-[#a1a1aa] mt-3">
-                Test: <span className="text-[#8b5cf6] font-mono">admin@reversound.com</span> / <span className="text-[#8b5cf6] font-mono">Admin123!</span>
-              </p>
+              {error?.includes('EMAIL_NOT_VERIFIED') || (
+                <p className="text-center text-xs text-[#a1a1aa] mt-2">
+                  E-posta doğrulanmadı?{' '}
+                  <button
+                    type="button"
+                    onClick={() => navigate('/verify-email')}
+                    className="text-[#8b5cf6] hover:text-[#7c3aed] transition-colors"
+                  >
+                    Yeniden gönder
+                  </button>
+                </p>
+              )}
             </form>
           ) : (
             <form onSubmit={handleRegister} className="space-y-4">

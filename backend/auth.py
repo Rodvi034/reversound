@@ -93,6 +93,7 @@ async def seed_admin(db):
             "role": "admin",
             "is_verified": True,
             "is_banned": False,
+            "email_verified": True,   # Admin is always verified
             "wallet_balance": 0.0,
             "escrow_balance": 0.0,
             "genres": [],
@@ -102,11 +103,14 @@ async def seed_admin(db):
             "onboarding_complete": True,
             "created_at": datetime.now(timezone.utc)
         })
-    elif not verify_password(admin_password, existing.get("password_hash", "")):
-        await db.users.update_one(
-            {"email": admin_email},
-            {"$set": {"password_hash": hash_password(admin_password)}}
-        )
+    else:
+        updates = {}
+        if not verify_password(admin_password, existing.get("password_hash", "")):
+            updates["password_hash"] = hash_password(admin_password)
+        if not existing.get("email_verified"):
+            updates["email_verified"] = True
+        if updates:
+            await db.users.update_one({"email": admin_email}, {"$set": updates})
 
 # ── Pydantic Models ─────────────────────────────────────────────────────────────
 class RegisterRequest(BaseModel):
@@ -133,6 +137,14 @@ class ProfileUpdateRequest(BaseModel):
 # ── Endpoints ───────────────────────────────────────────────────────────────────
 VALID_ROLES = {"producer", "artist", "engineer", "designer", "buyer"}
 
+def _generate_verification_token() -> str:
+    import secrets
+    return secrets.token_urlsafe(48)
+
+def _get_frontend_url() -> str:
+    origins = os.environ.get("CORS_ORIGINS", "http://localhost:3000").split(",")
+    return os.environ.get("FRONTEND_URL", origins[0].strip())
+
 @auth_router.post("/register")
 async def register(body: RegisterRequest, response: Response):
     db = get_db()
@@ -153,6 +165,7 @@ async def register(body: RegisterRequest, response: Response):
         "role": body.role if body.role in VALID_ROLES else "buyer",
         "is_verified": False,
         "is_banned": False,
+        "email_verified": False,
         "wallet_balance": 100.0,
         "escrow_balance": 0.0,
         "genres": [],
@@ -166,12 +179,27 @@ async def register(body: RegisterRequest, response: Response):
     user_doc["_id"] = result.inserted_id
     user = doc_to_dict(user_doc)
 
+    # Generate verification token + send email
+    token_str = _generate_verification_token()
+    await db.email_verifications.insert_one({
+        "user_id": user["id"],
+        "token": token_str,
+        "email": body.email,
+        "expires_at": datetime.now(timezone.utc).replace(hour=(datetime.now(timezone.utc).hour + 24) % 24),
+        "created_at": datetime.now(timezone.utc)
+    })
+    verify_url = f"{_get_frontend_url()}/verify-email?token={token_str}"
+    try:
+        import email_service as es
+        await es.send_verification(body.email, body.name, verify_url, db)
+    except Exception as e:
+        pass  # Non-blocking: user can resend
+
+    user.pop("password_hash", None)
     access_token = create_access_token(user["id"], user["email"], user["role"])
     refresh_token = create_refresh_token(user["id"])
     _set_cookies(response, access_token, refresh_token)
-
-    user.pop("password_hash", None)
-    return {"user": user, "access_token": access_token, "token_type": "bearer"}
+    return {"user": user, "access_token": access_token, "token_type": "bearer", "requires_verification": True}
 
 @auth_router.post("/login")
 async def login(body: LoginRequest, response: Response):
@@ -183,13 +211,64 @@ async def login(body: LoginRequest, response: Response):
     if user.get("is_banned"):
         raise HTTPException(403, "Account suspended. Contact support.")
 
+    # Email verification check (skip for legacy users who have no field)
+    if user.get("email_verified") == False:
+        raise HTTPException(403, "EMAIL_NOT_VERIFIED")
+
     user_dict = doc_to_dict(user)
     access_token = create_access_token(user_dict["id"], user_dict["email"], user_dict["role"])
     refresh_token = create_refresh_token(user_dict["id"])
     _set_cookies(response, access_token, refresh_token)
-
     user_dict.pop("password_hash", None)
     return {"user": user_dict, "access_token": access_token, "token_type": "bearer"}
+
+@auth_router.get("/verify-email")
+async def verify_email(token: str):
+    db = get_db()
+    record = await db.email_verifications.find_one({"token": token})
+    if not record:
+        raise HTTPException(400, "Invalid or expired verification token")
+    from bson import ObjectId
+    await db.users.update_one(
+        {"_id": ObjectId(record["user_id"])},
+        {"$set": {"email_verified": True}}
+    )
+    await db.email_verifications.delete_one({"token": token})
+    # Send welcome email
+    user = await db.users.find_one({"_id": ObjectId(record["user_id"])})
+    if user:
+        try:
+            import email_service as es
+            await es.send_welcome(user["email"], user["name"], user["role"], db)
+        except Exception: pass
+    return {"message": "E-posta dogrulandi! Artik giris yapabilirsiniz.", "verified": True}
+
+@auth_router.post("/resend-verification")
+async def resend_verification(request: Request):
+    data = await request.json()
+    email = data.get("email", "").lower().strip()
+    if not email:
+        raise HTTPException(400, "Email required")
+    db = get_db()
+    user = await db.users.find_one({"email": email})
+    if not user:
+        return {"message": "If this email exists, a verification link has been sent."}
+    if user.get("email_verified"):
+        raise HTTPException(400, "Email already verified")
+    token_str = _generate_verification_token()
+    await db.email_verifications.delete_many({"user_id": str(user["_id"])})
+    await db.email_verifications.insert_one({
+        "user_id": str(user["_id"]),
+        "token": token_str,
+        "email": email,
+        "created_at": datetime.now(timezone.utc)
+    })
+    verify_url = f"{_get_frontend_url()}/verify-email?token={token_str}"
+    try:
+        import email_service as es
+        await es.send_verification(email, user.get("name", ""), verify_url, db)
+    except Exception: pass
+    return {"message": "Dogrulama e-postasi yeniden gonderildi."}
 
 @auth_router.post("/logout")
 async def logout(response: Response):

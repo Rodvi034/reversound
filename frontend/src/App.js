@@ -12,6 +12,7 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 
 import LandingPage from '@/pages/LandingPage';
 import AuthPage from '@/pages/AuthPage';
+import VerifyEmailPage from '@/pages/VerifyEmailPage';
 import OnboardingPage from '@/pages/OnboardingPage';
 import BeatMarketplace from '@/pages/BeatMarketplace';
 import GigMarketplace from '@/pages/GigMarketplace';
@@ -26,6 +27,7 @@ import CreateGig from '@/pages/CreateGig';
 import AdminPortal from '@/pages/AdminPortal';
 import SubscriptionPage from '@/pages/SubscriptionPage';
 import WalletPage from '@/pages/WalletPage';
+import PaymentPage from '@/pages/PaymentPage';
 import StudioFeed from '@/pages/StudioFeed';
 import PlaylistPage from '@/pages/PlaylistPage';
 import SupportCenter from '@/pages/SupportCenter';
@@ -40,8 +42,12 @@ import BlogPage from '@/pages/BlogPage';
 import BlogPostDetail from '@/pages/BlogPostDetail';
 import CreateBlogPost from '@/pages/CreateBlogPost';
 import ReverStudio from '@/pages/ReverStudio';
+import ReverStudioTools from '@/pages/ReverStudioTools';
 import MyRoadmap from '@/pages/MyRoadmap';
 import CheckoutPage from '@/pages/CheckoutPage';
+import GearMarketplace from '@/pages/GearMarketplace';
+import SellGear from '@/pages/SellGear';
+import StudioMarketplace from '@/pages/StudioMarketplace';
 
 function App() {
   return (
@@ -57,6 +63,7 @@ function App() {
                       {/* Public */}
                       <Route path="/" element={<LandingPage />} />
                       <Route path="/auth" element={<AuthPage />} />
+                      <Route path="/verify-email" element={<VerifyEmailPage />} />
                       <Route path="/beats" element={<BeatMarketplace />} />
                       <Route path="/gigs" element={<GigMarketplace />} />
                       <Route path="/gigs/:id" element={<GigDetail />} />
@@ -66,11 +73,16 @@ function App() {
                       <Route path="/blog" element={<BlogPage />} />
                       <Route path="/blog/:id" element={<BlogPostDetail />} />
                       <Route path="/studio" element={<ReverStudio />} />
+                      <Route path="/studio/tools" element={<ReverStudioTools />} />
                       <Route path="/packs/:id" element={<PackDetail />} />
                       <Route path="/u/:username" element={<PublicProfile />} />
                       <Route path="/jobs" element={<JobBoard />} />
                       <Route path="/jobs/:id" element={<JobRequestDetail />} />
                       <Route path="/checkout" element={<CheckoutPage />} />
+                      <Route path="/payment" element={<PaymentPage />} />
+                      <Route path="/payment/callback" element={<PaymentPage />} />
+                      <Route path="/gear" element={<GearMarketplace />} />
+                      <Route path="/studios" element={<StudioMarketplace />} />
 
                       {/* Protected */}
                       <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
@@ -90,6 +102,8 @@ function App() {
                       <Route path="/analytics" element={<ProtectedRoute><AnalyticsDashboard /></ProtectedRoute>} />
                       <Route path="/favorites" element={<ProtectedRoute><FavoritesPage /></ProtectedRoute>} />
                       <Route path="/blog/create" element={<ProtectedRoute><CreateBlogPost /></ProtectedRoute>} />
+                      <Route path="/gear/sell" element={<ProtectedRoute><SellGear /></ProtectedRoute>} />
+                      <Route path="/studios/list" element={<ProtectedRoute><StudioMarketplace /></ProtectedRoute>} />
 
                       {/* Admin only */}
                       <Route path="/admin" element={<ProtectedRoute adminOnly><AdminPortal /></ProtectedRoute>} />
