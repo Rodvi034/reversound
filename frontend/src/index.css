@@ -177,3 +177,33 @@ body {
 /* ── Dark Mode Enforced — Light Mode Permanently Removed ─────────────────── */
 /* ReverSound is a DAW-inspired platform. Dark mode is the only supported theme. */
 html, body { background-color: #0d0d0f; color: #ffffff; }
+
+/* ── React Big Calendar Dark Theme Override ───────────────────────────────── */
+.rbc-calendar { background: transparent; color: #fff; font-family: 'Manrope', sans-serif; }
+.rbc-toolbar { margin-bottom: 16px; }
+.rbc-toolbar button { color: #a1a1aa; background: transparent; border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 6px 14px; font-size: 13px; cursor: pointer; transition: all 0.15s; }
+.rbc-toolbar button:hover { background: rgba(139,92,246,0.1); border-color: rgba(139,92,246,0.3); color: #fff; }
+.rbc-toolbar button.rbc-active { background: #8b5cf6; border-color: #8b5cf6; color: #fff; }
+.rbc-toolbar-label { color: #fff; font-weight: 700; font-size: 16px; font-family: 'Unbounded', sans-serif; }
+.rbc-header { background: #141416; border-color: rgba(255,255,255,0.08); color: #a1a1aa; padding: 8px 4px; font-size: 12px; font-family: 'JetBrains Mono', monospace; text-transform: uppercase; letter-spacing: 0.05em; }
+.rbc-month-view, .rbc-time-view, .rbc-week-view { background: #0d0d0f; border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; overflow: hidden; }
+.rbc-month-row, .rbc-time-content { border-color: rgba(255,255,255,0.06); }
+.rbc-day-bg { background: transparent; }
+.rbc-day-bg:hover { background: rgba(139,92,246,0.04); }
+.rbc-off-range-bg { background: rgba(255,255,255,0.01); }
+.rbc-today { background: rgba(139,92,246,0.08) !important; }
+.rbc-date-cell { color: #a1a1aa; font-size: 12px; padding: 4px 6px; }
+.rbc-date-cell.rbc-now { color: #8b5cf6; font-weight: 700; }
+.rbc-event { border: none; border-radius: 4px; font-size: 11px; padding: 2px 6px; cursor: pointer; }
+.rbc-event:focus { outline: 2px solid #8b5cf6; }
+.rbc-event-label { font-size: 11px; color: rgba(255,255,255,0.8); }
+.rbc-selected-cell { background: rgba(16,185,129,0.1) !important; }
+.rbc-time-slot { border-color: rgba(255,255,255,0.04); color: #6b7280; font-size: 11px; font-family: 'JetBrains Mono', monospace; }
+.rbc-time-gutter .rbc-timeslot-group { border-color: rgba(255,255,255,0.06); }
+.rbc-current-time-indicator { background: #8b5cf6; height: 2px; }
+.rbc-show-more { color: #8b5cf6; font-size: 11px; background: transparent; }
+.rbc-show-more:hover { color: #7c3aed; }
+.rbc-slot-selection { background: rgba(16,185,129,0.2); border: 1px solid #10b981; border-radius: 4px; }
+.rbc-day-slot .rbc-time-slot { border-color: rgba(255,255,255,0.04); }
+.rbc-allday-cell { background: rgba(255,255,255,0.01); }
+.rbc-addons-dnd .rbc-event.rbc-addons-dnd-drag-preview { opacity: 0.7; }

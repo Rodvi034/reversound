@@ -76,7 +76,12 @@ async def lifespan(app: FastAPI):
     try: init_storage()
     except Exception as e: logger.warning(f"Storage init deferred: {e}")
     await room_manager.init()
-    logger.info("ReverSound API v9.0 — Commercial Launch Edition")
+    # Auto-seed marketplace demo data
+    from seed_demo_marketplaces import seed_demo_marketplaces
+    results = await seed_demo_marketplaces(db, force=False)
+    if results["studios_seeded"] or results["gear_seeded"]:
+        logger.info(f"Demo data seeded: {results}")
+    logger.info("ReverSound API v10.0 — Commercial Launch Edition")
     yield
     close_db_client()
 

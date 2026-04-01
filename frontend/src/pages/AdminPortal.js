@@ -315,32 +315,100 @@ const AdminPortal = () => {
             {/* Financials */}
             {activeTab === 'financials' && financials && (
               <div className="space-y-5">
+                {/* Top metrics */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                   {[
-                    { label: 'Platform Geliri (Gig)', value: `₺${financials.platform_revenue_gigs?.toFixed(2)}`, color: '#10b981' },
-                    { label: 'Platform Geliri (Beat)', value: `₺${financials.platform_revenue_beats?.toFixed(2)}`, color: '#8b5cf6' },
-                    { label: 'Toplam GMV', value: `₺${financials.gmv?.toFixed(2)}`, color: '#f59e0b' },
-                    { label: 'Bekleyen Escrow', value: `₺${financials.pending_escrow?.toFixed(2)}`, color: '#ec4899' },
+                    { label: 'Toplam GMV', value: `₺${(financials.total_gmv || financials.gmv || 0)?.toFixed(0)}`, color: '#8b5cf6', sub: 'Tüm kanallar' },
+                    { label: 'Platform Geliri', value: `₺${(financials.total_platform_revenue || financials.platform_revenue_gigs || 0)?.toFixed(0)}`, color: '#10b981', sub: 'Net komisyon' },
+                    { label: 'Bekleyen Escrow', value: `₺${(financials.pending_escrow || 0)?.toFixed(0)}`, color: '#f59e0b', sub: 'Tutuldu' },
+                    { label: 'Aktif İtiraz', value: financials.active_disputes || 0, color: '#ec4899', sub: `₺${financials.disputed_value?.toFixed(0)}` },
                   ].map(s => (
                     <div key={s.label} className="rs-card p-4">
                       <p className="text-xl font-bold" style={{ color: s.color }}>{s.value}</p>
                       <p className="text-xs text-[#a1a1aa] mt-1">{s.label}</p>
+                      {s.sub && <p className="text-[10px] text-[#a1a1aa]">{s.sub}</p>}
                     </div>
                   ))}
                 </div>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+
+                {/* Category revenue breakdown */}
+                {financials.category_breakdown?.length > 0 && (
+                  <div className="rs-card p-5">
+                    <p className="text-xs font-mono uppercase text-[#a1a1aa] mb-4">Gelir Kaynağı Dağılımı</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                      {financials.category_breakdown.map(cat => (
+                        <div key={cat.category} className="p-3 bg-[#0d0d0f] rounded-lg text-center" style={{ borderTop: `2px solid ${cat.color}` }}>
+                          <p className="text-lg font-bold" style={{ color: cat.color }}>₺{cat.revenue?.toFixed(0)}</p>
+                          <p className="text-[10px] text-[#a1a1aa] mt-1 font-mono">{cat.category}</p>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="space-y-2">
+                      {financials.category_breakdown.map(cat => {
+                        const total = financials.category_breakdown.reduce((a, c) => a + (c.revenue || 0), 0) || 1;
+                        const pct = Math.round((cat.revenue / total) * 100);
+                        return (
+                          <div key={cat.category}>
+                            <div className="flex justify-between text-xs mb-1">
+                              <span className="text-[#a1a1aa]">{cat.category}</span>
+                              <span className="text-white font-mono">{pct}%</span>
+                            </div>
+                            <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                              <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: cat.color }} />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* GMV breakdown */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {[
-                    { label: 'Tamamlanan Sipariş', value: financials.order_count, color: '#10b981' },
-                    { label: 'Beat Satışı', value: financials.beat_purchase_count, color: '#8b5cf6' },
-                    { label: 'Aktif İtiraz', value: financials.active_disputes, color: '#ec4899' },
-                    { label: 'İtirazlı Tutar', value: `₺${financials.disputed_value?.toFixed(2)}`, color: '#f59e0b' },
+                    { label: 'Gig GMV', value: `₺${financials.gmv?.toFixed(0) || 0}`, color: '#8b5cf6' },
+                    { label: 'Beat GMV', value: `₺${financials.beats_gmv?.toFixed(0) || 0}`, color: '#10b981' },
+                    { label: 'Stüdyo GMV', value: `₺${financials.studio_gmv?.toFixed(0) || 0}`, color: '#f59e0b' },
+                    { label: 'Gear GMV', value: `₺${financials.gear_gmv?.toFixed(0) || 0}`, color: '#ec4899' },
                   ].map(s => (
-                    <div key={s.label} className="rs-card p-4">
-                      <p className="text-xl font-bold" style={{ color: s.color }}>{s.value}</p>
-                      <p className="text-xs text-[#a1a1aa] mt-1">{s.label}</p>
+                    <div key={s.label} className="rs-card p-3 text-center">
+                      <p className="text-base font-bold" style={{ color: s.color }}>{s.value}</p>
+                      <p className="text-[10px] text-[#a1a1aa] font-mono uppercase">{s.label}</p>
                     </div>
                   ))}
                 </div>
+
+                {/* Monthly table */}
+                {financials.monthly_revenue?.length > 0 && (
+                  <div className="rs-card p-5">
+                    <p className="text-xs font-mono uppercase text-[#a1a1aa] mb-4">Aylık Gelir (Tüm Kanallar)</p>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-xs">
+                        <thead>
+                          <tr className="border-b border-white/5">
+                            <th className="text-left pb-2 text-[#a1a1aa] font-mono">Ay</th>
+                            <th className="text-right pb-2" style={{ color: '#8b5cf6' }}>Gig</th>
+                            <th className="text-right pb-2" style={{ color: '#10b981' }}>Beat</th>
+                            <th className="text-right pb-2" style={{ color: '#f59e0b' }}>Stüdyo</th>
+                            <th className="text-right pb-2 text-white font-bold">Toplam</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-white/5">
+                          {financials.monthly_revenue.map((row, i) => (
+                            <tr key={i}>
+                              <td className="py-2 text-[#a1a1aa]">{row.month}</td>
+                              <td className="py-2 text-right" style={{ color: '#8b5cf6' }}>₺{(row.gigs || row.gmv || 0)?.toFixed(0)}</td>
+                              <td className="py-2 text-right" style={{ color: '#10b981' }}>₺{(row.beats || 0)?.toFixed(0)}</td>
+                              <td className="py-2 text-right" style={{ color: '#f59e0b' }}>₺{(row.studios || 0)?.toFixed(0)}</td>
+                              <td className="py-2 text-right text-white font-bold">₺{(row.total || row.gmv || 0)?.toFixed(0)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
                 {/* Commission tiers */}
                 {financials.seller_tier_distribution?.length > 0 && (
                   <div className="rs-card p-5">
@@ -355,6 +423,7 @@ const AdminPortal = () => {
                     </div>
                   </div>
                 )}
+
                 {/* Recent transactions */}
                 <div className="rs-card overflow-hidden">
                   <div className="px-4 py-3 border-b border-white/5">

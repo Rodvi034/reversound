@@ -48,6 +48,7 @@ import CheckoutPage from '@/pages/CheckoutPage';
 import GearMarketplace from '@/pages/GearMarketplace';
 import SellGear from '@/pages/SellGear';
 import StudioMarketplace from '@/pages/StudioMarketplace';
+import StudioDetail from '@/pages/StudioDetail';
 
 function App() {
   return (
@@ -83,6 +84,7 @@ function App() {
                       <Route path="/payment/callback" element={<PaymentPage />} />
                       <Route path="/gear" element={<GearMarketplace />} />
                       <Route path="/studios" element={<StudioMarketplace />} />
+                      <Route path="/studios/:id" element={<StudioDetail />} />
 
                       {/* Protected */}
                       <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />

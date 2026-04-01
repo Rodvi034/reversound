@@ -7,18 +7,11 @@ import math
 
 from database import get_db
 from utils import doc_to_dict, docs_to_list
-from auth import get_current_user
+from auth import get_current_user, require_admin
 
 studios_router = APIRouter(prefix="/studios", tags=["studios"])
 
-PLATFORM_COMMISSION = 0.15  # 15%
-
-AMENITIES_LIST = [
-    "Grand Piyano", "Full Davul Seti", "Vokal Kabini", "Canlı Oda", "Kontrol Odası",
-    "Pro Tools", "Logic Pro X", "Ableton Live", "SSL Console", "Neve Console",
-    "Genelec Monitör", "Neumann Mikrofon", "Yüksek Hızlı WiFi", "Otopark",
-    "Klima", "Lounge Alan", "Catering"
-]
+PLATFORM_COMMISSION = 0.15
 
 class StudioCreate(BaseModel):
     name: str
@@ -37,33 +30,28 @@ class StudioCreate(BaseModel):
 
 class ReservationCreate(BaseModel):
     studio_id: str
-    start_datetime: str  # ISO format
+    start_datetime: str
     end_datetime: str
     requirements: Optional[str] = ""
 
+class BlockSlot(BaseModel):
+    studio_id: str
+    start_datetime: str
+    end_datetime: str
+    reason: Optional[str] = "Kapalı / Bakım"
+
 @studios_router.get("")
-async def list_studios(
-    city: Optional[str] = None,
-    search: Optional[str] = None,
-    min_rate: Optional[float] = None,
-    max_rate: Optional[float] = None,
-    page: int = 1,
-    limit: int = 20
-):
+async def list_studios(city: str = None, search: str = None, min_rate: float = None, max_rate: float = None, page: int = 1, limit: int = 20):
     db = get_db()
     query = {"status": "active"}
     if city:
         query["city"] = {"$regex": city, "$options": "i"}
     if search:
-        query["$or"] = [
-            {"name": {"$regex": search, "$options": "i"}},
-            {"description": {"$regex": search, "$options": "i"}},
-            {"amenities": {"$regex": search, "$options": "i"}},
-        ]
+        query["$or"] = [{"name": {"$regex": search, "$options": "i"}}, {"description": {"$regex": search, "$options": "i"}}]
     if min_rate:
-        query.setdefault("hourly_rate", {})["$gte"] = min_rate
+        query.setdefault("hourly_rate", {})["$gte"] = float(min_rate)
     if max_rate:
-        query.setdefault("hourly_rate", {})["$lte"] = max_rate
+        query.setdefault("hourly_rate", {})["$lte"] = float(max_rate)
     skip = (page - 1) * limit
     total = await db.studios.count_documents(query)
     cursor = db.studios.find(query).sort("rating", -1).skip(skip).limit(limit)
@@ -71,12 +59,8 @@ async def list_studios(
     return {"studios": studios, "total": total, "page": page}
 
 @studios_router.get("/map")
-async def studios_map(
-    lat: float = 41.0082, lng: float = 28.9784, radius_km: float = 50
-):
-    """Get studios within radius for map display."""
+async def studios_map(lat: float = 41.0082, lng: float = 28.9784, radius_km: float = 800):
     db = get_db()
-    # Simple haversine filter (MongoDB $near requires geospatial index)
     all_studios = docs_to_list(await db.studios.find({"status": "active"}).to_list(500))
     nearby = []
     for s in all_studios:
@@ -88,13 +72,93 @@ async def studios_map(
     nearby.sort(key=lambda x: x.get("distance_km", 999))
     return nearby[:50]
 
-def _haversine(lat1, lon1, lat2, lon2) -> float:
-    R = 6371
-    phi1, phi2 = math.radians(lat1), math.radians(lat2)
-    dphi = math.radians(lat2 - lat1)
-    dlambda = math.radians(lon2 - lon1)
-    a = math.sin(dphi/2)**2 + math.cos(phi1)*math.cos(phi2)*math.sin(dlambda/2)**2
-    return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+@studios_router.get("/reservations/my")
+async def my_reservations(request: Request):
+    user = await get_current_user(request)
+    db = get_db()
+    cursor = db.studio_reservations.find(
+        {"$or": [{"renter_id": user["id"]}, {"owner_id": user["id"]}]}
+    ).sort("start_datetime", -1)
+    return docs_to_list(await cursor.to_list(100))
+
+@studios_router.get("/{studio_id}/calendar")
+async def get_calendar_events(studio_id: str, year: int = None, month: int = None):
+    """
+    Get all calendar events for a studio in a given month.
+    Returns: booked reservations + owner-blocked slots in calendar event format.
+    """
+    db = get_db()
+    now = datetime.now(timezone.utc)
+    y = year or now.year
+    m = month or now.month
+
+    # Build month range
+    start_of_month = datetime(y, m, 1, tzinfo=timezone.utc)
+    if m == 12:
+        end_of_month = datetime(y + 1, 1, 1, tzinfo=timezone.utc)
+    else:
+        end_of_month = datetime(y, m + 1, 1, tzinfo=timezone.utc)
+
+    events = []
+
+    # Booked reservations
+    cursor = db.studio_reservations.find({
+        "studio_id": studio_id,
+        "status": {"$in": ["confirmed", "pending"]},
+        "start_datetime": {"$gte": start_of_month, "$lt": end_of_month}
+    })
+    reservations = docs_to_list(await cursor.to_list(500))
+    for r in reservations:
+        events.append({
+            "id": r["id"],
+            "title": f"Rezerve — {r.get('renter_name', 'Kiracı')}",
+            "start": r["start_datetime"],
+            "end": r["end_datetime"],
+            "type": "booked",
+            "color": "#ef4444",
+            "hours": r.get("total_hours", 0),
+        })
+
+    # Owner-blocked slots
+    cursor = db.studio_blocked_slots.find({
+        "studio_id": studio_id,
+        "start_datetime": {"$gte": start_of_month, "$lt": end_of_month}
+    })
+    blocked = docs_to_list(await cursor.to_list(200))
+    for b in blocked:
+        events.append({
+            "id": b["id"],
+            "title": b.get("reason", "Kapalı"),
+            "start": b["start_datetime"],
+            "end": b["end_datetime"],
+            "type": "blocked",
+            "color": "#6b7280",
+        })
+
+    return {
+        "events": events,
+        "studio_id": studio_id,
+        "year": y,
+        "month": m,
+        "total_booked": len(reservations),
+        "total_blocked": len(blocked),
+    }
+
+@studios_router.get("/{studio_id}/availability")
+async def get_availability(studio_id: str):
+    db = get_db()
+    cursor = db.studio_reservations.find(
+        {"studio_id": studio_id, "status": {"$in": ["confirmed", "pending"]}},
+        {"start_datetime": 1, "end_datetime": 1, "status": 1}
+    )
+    bookings = docs_to_list(await cursor.to_list(200))
+    # Also include blocked slots
+    blocked_cursor = db.studio_blocked_slots.find({"studio_id": studio_id}, {"start_datetime": 1, "end_datetime": 1})
+    blocked = docs_to_list(await blocked_cursor.to_list(200))
+    return {
+        "booked_slots": bookings,
+        "blocked_slots": blocked,
+    }
 
 @studios_router.get("/{studio_id}")
 async def get_studio(studio_id: str):
@@ -103,7 +167,6 @@ async def get_studio(studio_id: str):
     if not studio:
         raise HTTPException(404, "Stüdyo bulunamadı")
     await db.studios.update_one({"_id": ObjectId(studio_id)}, {"$inc": {"total_views": 1}})
-    # Get reviews
     reviews_cursor = db.studio_reviews.find({"studio_id": studio_id}).sort("created_at", -1).limit(10)
     reviews = docs_to_list(await reviews_cursor.to_list(10))
     result = doc_to_dict(studio)
@@ -131,16 +194,43 @@ async def create_studio(body: StudioCreate, request: Request):
     doc["_id"] = result.inserted_id
     return doc_to_dict(doc)
 
-@studios_router.get("/{studio_id}/availability")
-async def get_availability(studio_id: str):
-    """Get booked time slots for a studio."""
+@studios_router.post("/block")
+async def block_slot(body: BlockSlot, request: Request):
+    """Owner blocks a time slot (maintenance/unavailable)."""
+    user = await get_current_user(request)
     db = get_db()
-    cursor = db.studio_reservations.find(
-        {"studio_id": studio_id, "status": {"$in": ["confirmed", "pending"]}},
-        {"start_datetime": 1, "end_datetime": 1, "status": 1}
-    )
-    bookings = docs_to_list(await cursor.to_list(200))
-    return {"booked_slots": bookings}
+    studio = await db.studios.find_one({"_id": ObjectId(body.studio_id)})
+    if not studio:
+        raise HTTPException(404, "Stüdyo bulunamadı")
+    if studio["owner_id"] != user["id"] and user["role"] != "admin":
+        raise HTTPException(403, "Sadece stüdyo sahibi blok ekleyebilir")
+
+    start = datetime.fromisoformat(body.start_datetime.replace("Z", "+00:00"))
+    end = datetime.fromisoformat(body.end_datetime.replace("Z", "+00:00"))
+
+    block_doc = {
+        "studio_id": body.studio_id,
+        "owner_id": user["id"],
+        "start_datetime": start,
+        "end_datetime": end,
+        "reason": body.reason,
+        "created_at": datetime.now(timezone.utc)
+    }
+    result = await db.studio_blocked_slots.insert_one(block_doc)
+    block_doc["_id"] = result.inserted_id
+    return doc_to_dict(block_doc)
+
+@studios_router.delete("/block/{block_id}")
+async def unblock_slot(block_id: str, request: Request):
+    user = await get_current_user(request)
+    db = get_db()
+    block = await db.studio_blocked_slots.find_one({"_id": ObjectId(block_id)})
+    if not block:
+        raise HTTPException(404, "Blok bulunamadı")
+    if block["owner_id"] != user["id"] and user["role"] != "admin":
+        raise HTTPException(403, "Yetkisiz")
+    await db.studio_blocked_slots.delete_one({"_id": ObjectId(block_id)})
+    return {"message": "Blok kaldırıldı"}
 
 @studios_router.post("/reserve")
 async def create_reservation(body: ReservationCreate, request: Request):
@@ -164,24 +254,25 @@ async def create_reservation(body: ReservationCreate, request: Request):
     subtotal = round(hourly * hours, 2)
     commission = round(subtotal * PLATFORM_COMMISSION, 2)
 
-    # Check wallet
     buyer = await db.users.find_one({"_id": ObjectId(user["id"])})
     if buyer.get("wallet_balance", 0) < subtotal:
         raise HTTPException(400, f"Yetersiz bakiye. {subtotal:.2f} TRY gerekli.")
 
-    # Check availability
-    conflict = await db.studio_reservations.find_one({
+    # Check both reservations and blocked slots for conflicts
+    conflict_query = {
         "studio_id": body.studio_id,
-        "status": {"$in": ["confirmed", "pending"]},
         "$or": [
             {"start_datetime": {"$lt": end, "$gte": start}},
             {"end_datetime": {"$gt": start, "$lte": end}},
+            {"start_datetime": {"$lte": start}, "end_datetime": {"$gte": end}},
         ]
-    })
-    if conflict:
-        raise HTTPException(400, "Bu tarih/saat dilimi dolu")
+    }
+    reservation_conflict = await db.studio_reservations.find_one({**conflict_query, "status": {"$in": ["confirmed", "pending"]}})
+    blocked_conflict = await db.studio_blocked_slots.find_one(conflict_query)
 
-    # Deduct escrow
+    if reservation_conflict or blocked_conflict:
+        raise HTTPException(400, "Bu tarih/saat dilimi dolu veya kapalı")
+
     await db.users.update_one({"_id": ObjectId(user["id"])}, {"$inc": {"wallet_balance": -subtotal, "escrow_balance": subtotal}})
 
     reservation_doc = {
@@ -190,7 +281,7 @@ async def create_reservation(body: ReservationCreate, request: Request):
         "renter_id": user["id"],
         "renter_name": user["name"],
         "owner_id": studio["owner_id"],
-        "owner_name": studio["owner_name"],
+        "owner_name": studio.get("owner_name", ""),
         "start_datetime": start,
         "end_datetime": end,
         "total_hours": round(hours, 2),
@@ -207,11 +298,10 @@ async def create_reservation(body: ReservationCreate, request: Request):
     reservation_doc["_id"] = result.inserted_id
     return doc_to_dict(reservation_doc)
 
-@studios_router.get("/reservations/my")
-async def my_reservations(request: Request):
-    user = await get_current_user(request)
-    db = get_db()
-    cursor = db.studio_reservations.find(
-        {"$or": [{"renter_id": user["id"]}, {"owner_id": user["id"]}]}
-    ).sort("start_datetime", -1)
-    return docs_to_list(await cursor.to_list(100))
+def _haversine(lat1, lon1, lat2, lon2) -> float:
+    R = 6371
+    phi1, phi2 = math.radians(lat1), math.radians(lat2)
+    dphi = math.radians(lat2 - lat1)
+    dlambda = math.radians(lon2 - lon1)
+    a = math.sin(dphi/2)**2 + math.cos(phi1)*math.cos(phi2)*math.sin(dlambda/2)**2
+    return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
