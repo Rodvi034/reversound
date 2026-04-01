@@ -13,7 +13,19 @@ ReverSound — Music Career Ecosystem & Freelance Marketplace
 - **AI:** Gemini 3.1 Pro Preview via emergentintegrations (EMERGENT_LLM_KEY)
 - **Escrow:** Mock escrow system (Iyzico/PayTR ready architecture)
 
-## Implemented Features (v10.0 — Sprint 10 — 2026-04-01) MARKETPLACE MASTERY
+## Implemented Features (v11.0 — Sprint 11 — 2026-04-01) ENTERPRISE POLISH
+
+### Sprint 11 Additions + Bug Fixes
+- [x] **CRITICAL BUG FIXED: Gear Market** — `/gear/:id` route + full `GearDetail.js` page: photo carousel (prev/next), condition badge, brand, price, negotiable flag, seller profile link, "Satıcıya Mesaj At" CTA, related listings grid
+- [x] **CRITICAL BUG FIXED: Gig Message Seller** — `handleMessage` now checks for `seller_id === 'demo'` and shows graceful alert; real seller conversations work correctly
+- [x] **Chat DLP Masking (Enterprise)** — `mask_sensitive_content()` in utils.py: emails→`[E-POSTA GİZLENDİ]`, Turkish phones→`[TELEFON GİZLENDİ]`, social handles→`[SOSYAL MEDYA GİZLENDİ]`, external links→`[LİNK GİZLENDİ]`. Messages delivered with masked content + warning. Applied in both HTTP endpoint and WebSocket
+- [x] **Strong Password Validation** — `validate_password()`: 8+ chars, 1+ uppercase, 1+ number. Clear Turkish error messages
+- [x] **Profile Settings Page** — `/settings`: Edit display name, bio, avatar (DragDropZone + URL), genre toggles. Full `PATCH /api/auth/profile` support with `coach_profile` field
+- [x] **RadioRever Player** — Persistent bottom-right floating player with beats from platform. Play/pause/next, volume, minimized mode, waveform animation. Visible globally via Layout
+- [x] **AI Coach 2.0 Questionnaire** — `CoachOnboarding` component: 4 questions (Target Audience, Musical Style, Equipment, Technical Level). Shown first-time only. Answers saved to `user.coach_profile` and used to enhance Gemini system prompt (industry veteran, fanbase-first approach)
+- [x] **Airbnb-Style Studio Marketplace** — Left 50% card grid + right 50% sticky Leaflet map. Price-labeled black pill markers (₺350 format). Popup with photo, name, rating, price, "Stüdyoyu Gör" button. Auto-fit bounds
+- [x] **AddStudio with Geocoding + Draggable Pin** — `/studios/list`: Nominatim geocoding (real address→lat/lng), draggable Leaflet marker, `useMapEvents` click-to-place, DragDropZone for photos
+- [x] **Testing agent auto-fixed**: Navbar `User` icon import, DLP overlapping patterns resolved
 
 ### Sprint 10 Additions
 - [x] **Studio Availability Calendar** — `StudioAvailabilityCalendar.js` (react-big-calendar v1.19.4 + date-fns). Renter view: drag-to-select time slots, conflict detection, dynamic price calculator (₺/h × hours), green selection preview, Reservasyon Özeti panel with escrow info. Dark theme CSS overrides in index.css
