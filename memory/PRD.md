@@ -13,7 +13,21 @@ ReverSound — Music Career Ecosystem & Freelance Marketplace
 - **AI:** Gemini 3.1 Pro Preview via emergentintegrations (EMERGENT_LLM_KEY)
 - **Escrow:** Mock escrow system (Iyzico/PayTR ready architecture)
 
-## Implemented Features (v8.0 — Sprint 8 — 2026-03-31)
+## Implemented Features (v9.0 — Sprint 9 — 2026-04-01) COMMERCIAL LAUNCH
+
+### Sprint 9 Additions
+- [x] **White-Labeling** — Title changed to "ReverSound - Müzik Kariyer Ekosistemi", badge hidden via CSS
+- [x] **Email Verification** — Registration creates `email_verified=False`, verification token sent via SMTP/Resend/mock, login blocked until verified. `GET /verify-email?token=`, `POST /resend-verification`, VerifyEmailPage frontend
+- [x] **Real Iyzico Payment** — Full Iyzico CheckoutForm integration (sandbox mode until keys set). `IYZICO_API_KEY` + `IYZICO_SECRET_KEY` in .env activate live mode. Sub-merchant registration, escrow release with real Iyzico approval
+- [x] **Mock Wallet Topup Removed** — WalletPage now shows "Kart ile Bakiye Yükle" → /payment page with Iyzico credit card form
+- [x] **SMTP Email Service** — Gmail SMTP via smtplib async (run_in_executor). `SMTP_EMAIL` + `SMTP_APP_PASSWORD` in .env. Resend fallback, mock log fallback
+- [x] **Gear Marketplace** — P2P music equipment market: 8 categories, brand/condition/city filters, photos, negotiable price, full CRUD
+- [x] **Studio Rental (Airbnb for Studios)** — Full stack: studio listings with lat/lng, Leaflet.js interactive map, haversine distance filtering, hourly pricing with 15% platform commission, reservation system with escrow, availability checking
+- [x] **StudioMapView** — React-Leaflet with custom purple markers, popup cards, studio info on click
+- [x] **Rever Studio AI Tools** — `/studio/tools` with 3 animated tabs: BPM/Key (real librosa analysis: tempo + Krumhansl-Schmuckler key), Stem Splitter (Demucs architecture), AI Mastering (Dolby.io architecture)
+- [x] **DragDropZone Component** — Animated drag & drop with preview (images), progress bar, type-aware accept, error states
+- [x] **i18n Fixed** — I18nContext uses `useEffect` to set `document.documentElement.lang` + page title based on locale. Proper TR/EN fallback chain
+- [x] **Admin email_verified=True** — seed_admin idempotently ensures admin is always email-verified
 
 ### Sprint 8 Additions (Enterprise Infrastructure)
 - [x] **PDF License Contracts** — `GET /api/orders/{id}/contract` generates professional PDF using fpdf2: parties info, beat details, license tier with full terms (Basic/Premium/Exclusive), governing law, signature lines, ReverSound branding
