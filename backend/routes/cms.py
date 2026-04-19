@@ -8,7 +8,6 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 from typing import Optional, List
 from bson import ObjectId
-
 from database import get_db
 from utils import doc_to_dict
 from auth import get_current_user, require_admin
@@ -17,9 +16,9 @@ cms_router = APIRouter(prefix="/cms", tags=["cms"])
 
 DEFAULT_CMS = {
     "hero": {
-        "title": "İLK HİTİN BURADA BAŞLIYOR",
+        "title": "MÜZİK KARİYERİNİ BURDA İNŞA ET!",
         "subtitle": "Beat satın al, gig yayınla, escrow güvencesiyle sipariş ver. Türkiye'nin en güvenli müzik ekosistemi.",
-        "badge_text": "Türkiye'nin Müzik Platformu",
+        "badge_text": "Türkiye'nin iLK Müzik Platformu",
         "cta_primary_text": "Hemen Başla",
         "cta_secondary_text": "Rever Studio",
         "background_video_url": "",
@@ -31,12 +30,12 @@ DEFAULT_CMS = {
         "satisfaction": "98%"
     },
     "genres": [
-        {"name": "TRAP", "color": "#8b5cf6", "image_url": "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=200&h=300&fit=crop"},
-        {"name": "HIP-HOP", "color": "#10b981", "image_url": "https://images.unsplash.com/photo-1571974599782-87624638275b?w=200&h=300&fit=crop"},
-        {"name": "R&B", "color": "#f59e0b", "image_url": "https://images.unsplash.com/photo-1516280440614-37939bbacd81?w=200&h=300&fit=crop"},
-        {"name": "POP", "color": "#ec4899", "image_url": "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=200&h=300&fit=crop"},
-        {"name": "DRILL", "color": "#ef4444", "image_url": "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=200&h=300&fit=crop"},
-        {"name": "LO-FI", "color": "#06b6d4", "image_url": "https://images.unsplash.com/photo-1483090467739-f32e1aa22c9e?w=200&h=300&fit=crop"},
+        {"name": "TRAP", "color": "#8b5cf6", "image_url": "http://localhost:8000/images/photo-1493225457124-a3eb161ffa5f.jpg"},
+        {"name": "HIP-HOP", "color": "#10b981", "image_url": "http://localhost:8000/images/photo-1493225457124-a3eb161ffa5f.jpg"},
+        {"name": "R&B", "color": "#f59e0b", "image_url": "http://localhost:8000/images/photo-1493225457124-a3eb161ffa5f.jpg"},
+        {"name": "POP", "color": "#ec4899", "image_url": "http://localhost:8000/images/photo-1493225457124-a3eb161ffa5f.jpg"},
+        {"name": "DRILL", "color": "#ef4444", "image_url": "http://localhost:8000/images/photo-1493225457124-a3eb161ffa5f.jpg"},
+        {"name": "LO-FI", "color": "#06b6d4", "image_url": "http://localhost:8000/images/photo-1493225457124-a3eb161ffa5f.jpg"},
     ],
     "partners": [
         {"name": "Universal Music"}, {"name": "Sony Music"}, {"name": "Warner Music"},
